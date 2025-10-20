@@ -86,26 +86,30 @@ interface StudyDao {
      * Obtiene todos los intentos PENDIENTES, unidos con el nombre del módulo.
      * Para la pantalla "Test".
      */
-    @Query("""
+    @Query(
+        """
         SELECT t.*, m.title 
         FROM test_attempts as t 
         INNER JOIN modules as m ON t.moduleId = m.id 
         WHERE t.status = 'PENDING' 
         ORDER BY t.timestamp DESC
-    """)
+    """
+    )
     fun getPendingTestsWithModule(): Flow<List<TestAttemptWithModule>>
 
     /**
      * Obtiene todos los intentos COMPLETADOS, unidos con el nombre del módulo.
      * Para la pantalla "Calificación".
      */
-    @Query("""
+    @Query(
+        """
         SELECT t.*, m.title 
         FROM test_attempts as t 
         INNER JOIN modules as m ON t.moduleId = m.id 
         WHERE t.status = 'COMPLETED' 
         ORDER BY t.timestamp DESC
-    """)
+    """
+    )
     fun getCompletedTestsWithModule(): Flow<List<TestAttemptWithModule>>
 
     /**
@@ -148,4 +152,29 @@ interface StudyDao {
     @Query("DELETE FROM test_attempts WHERE moduleId = :moduleId")
     suspend fun deleteAttemptsForModule(moduleId: Int)
 
+    /**
+     * Inserta UNA materia y devuelve el nuevo ID generado.
+     */
+    @Insert
+    suspend fun insertSubject(subject: SubjectEntity): Long
+
+    /**
+     * Inserta UN módulo y devuelve el nuevo ID generado.
+     */
+    @Insert
+    suspend fun insertModule(module: ModuleEntity): Long
+
+    /**
+     * Inserta UN submódulo y devuelve el nuevo ID generado.
+     */
+    @Insert
+    suspend fun insertSubmodule(submodule: SubmoduleEntity): Long
+
+    /**
+     * Borra UNA materia específica por su ID.
+     * Gracias a 'onDelete = CASCADE' en las entidades, esto borrará
+     * todos sus módulos, submódulos, preguntas e intentos asociados.
+     */
+    @Query("DELETE FROM subjects WHERE id = :subjectId")
+    suspend fun deleteSubjectById(subjectId: Int)
 }

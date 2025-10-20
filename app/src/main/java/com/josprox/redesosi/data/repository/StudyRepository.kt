@@ -13,6 +13,10 @@ import javax.inject.Singleton
 import com.josprox.redesosi.data.database.TestAttemptEntity
 import com.josprox.redesosi.data.database.UserAnswerEntity
 import kotlinx.coroutines.flow.first // Asegúrate de tener este import
+import androidx.room.Transaction
+import com.josprox.redesosi.data.SubjectImport
+import com.josprox.redesosi.data.database.SubjectEntity
+import kotlinx.serialization.json.Json
 
 
 @Singleton
@@ -129,6 +133,55 @@ class StudyRepository @Inject constructor(
 
         // 3. ¡Listo! La próxima vez que QuizViewModel llame a
         // getOrCreateQuestionsForModule(), las volverá a generar.
+    }
+
+    /**
+     * Parsea un string JSON, valida la estructura e importa la nueva materia
+     * a la base de datos de forma transaccional.
+     */
+    @Transaction // <-- Esto asegura que si algo falla, no se guarde nada (todo o nada)
+    suspend fun importSubjectFromJson(jsonString: String) {
+        // 1. Parsear el JSON a nuestras clases DTO
+        val subjectImport = Json.decodeFromString<SubjectImport>(jsonString)
+
+        // 2. Insertar la materia principal y obtener su nuevo ID
+        val newSubjectId = studyDao.insertSubject(
+            SubjectEntity(
+                id = 0, // Room generará el ID
+                name = subjectImport.name
+            )
+        )
+
+        // 3. Iterar sobre los módulos, insertarlos y obtener sus IDs
+        subjectImport.modules.forEach { moduleImport ->
+            val newModuleId = studyDao.insertModule(
+                ModuleEntity(
+                    id = 0,
+                    subjectId = newSubjectId.toInt(), // Usamos el ID de la materia padre
+                    title = moduleImport.title,
+                    shortDescription = moduleImport.shortDescription
+                )
+            )
+
+            // 4. Iterar sobre los submódulos e insertarlos
+            val submoduleEntities = moduleImport.submodules.map { submoduleImport ->
+                SubmoduleEntity(
+                    id = 0,
+                    moduleId = newModuleId.toInt(), // Usamos el ID del módulo padre
+                    title = submoduleImport.title,
+                    contentMd = submoduleImport.contentMd
+                )
+            }
+            // (Usamos la función plural que ya tenías para eficiencia)
+            studyDao.insertSubmodules(submoduleEntities)
+        }
+    }
+
+    /**
+     * Borra una materia y  su contenido asociado (módulos, preguntas, historial).
+     */
+    suspend fun deleteSubject(subjectId: Int) {
+        studyDao.deleteSubjectById(subjectId)
     }
 }
 

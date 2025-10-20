@@ -115,6 +115,9 @@ dependencies {
     // -- Dotenv Vault (Env) ---
     implementation(libs.dotenv.vault.kotlin)
 
+    // --- Testing
+    implementation(libs.kotlinx.serialization.json)
+
     // --- Testing ---
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
