@@ -1,20 +1,38 @@
 package com.josprox.redesosi.vm
 
 import androidx.lifecycle.ViewModel
-import androidx.navigation.NavHostController
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import androidx.lifecycle.viewModelScope
+import com.josprox.redesosi.data.database.TestAttemptWithModule
+import com.josprox.redesosi.data.repository.StudyRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map // <-- IMPORTANTE: AÑADE ESTE IMPORT
+import kotlinx.coroutines.flow.stateIn
+import javax.inject.Inject
 
+// Estado de la UI
 data class CalificacionUiState(
-    val titulo: String = "Verifica tu calificación",
-    val botonTexto: String = "Ver Calificación"
+    val completedTests: List<TestAttemptWithModule> = emptyList()
 )
 
-class CalificacionViewModel : ViewModel() {
-    private val _uiState = MutableStateFlow(CalificacionUiState())
-    val uiState = _uiState.asStateFlow()
+@HiltViewModel
+class CalificacionViewModel @Inject constructor(
+    studyRepository: StudyRepository
+) : ViewModel() {
 
-    fun onVerCalificacionClicked(navController: NavHostController) {
-        println("Ver calificación clickeado")
-    }
+    // --- CÓDIGO CORREGIDO Y SIMPLIFICADO ---
+    // 1. Obtenemos el Flow de tests completados del repositorio.
+    // 2. Usamos .map { ... } para transformar la List<TestAttemptWithModule> en un CalificacionUiState.
+    // 3. Usamos .stateIn { ... } para convertir el Flow en un StateFlow que la UI pueda consumir.
+    val uiState: StateFlow<CalificacionUiState> =
+        studyRepository.getCompletedTests()
+            .map { tests ->
+                CalificacionUiState(completedTests = tests)
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = CalificacionUiState() // El valor inicial es un UiState vacío
+            )
 }

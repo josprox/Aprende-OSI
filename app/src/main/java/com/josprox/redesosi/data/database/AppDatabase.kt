@@ -11,8 +11,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Database(
-    entities = [SubjectEntity::class, ModuleEntity::class, SubmoduleEntity::class, QuestionEntity::class],
-    version = 1,
+    entities = [SubjectEntity::class, ModuleEntity::class, SubmoduleEntity::class, QuestionEntity::class,TestAttemptEntity::class, // <-- AÑADIR
+        UserAnswerEntity::class],
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,6 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "study_app_database"
                 )
                     .addCallback(DatabaseCallback(context))
+                    .fallbackToDestructiveMigration(false)
                     .build()
                 INSTANCE = instance
                 instance

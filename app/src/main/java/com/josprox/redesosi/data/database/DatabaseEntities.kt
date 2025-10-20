@@ -61,3 +61,49 @@ data class QuestionEntity(
     val optionD: String,
     val correctAnswer: String // "A", "B", o "C"
 )
+// --- Añade estas dos nuevas clases en tu archivo DatabaseEntities.kt ---
+
+@Entity(
+    tableName = "test_attempts",
+    foreignKeys = [ForeignKey(
+        entity = ModuleEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["moduleId"],
+        onDelete = ForeignKey.CASCADE
+    )]
+)
+data class TestAttemptEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val moduleId: Int,
+    val status: String, // "PENDING" o "COMPLETED"
+    val score: Double = 0.0, // Calificación sobre 10 (ej. 8.5)
+    val totalQuestions: Int,
+    val correctAnswers: Int = 0,
+    val timestamp: Long = System.currentTimeMillis(),
+    val currentQuestionIndex: Int = 0
+)
+
+@Entity(
+    tableName = "user_answers",
+    foreignKeys = [
+        ForeignKey(
+            entity = TestAttemptEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["testAttemptId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = QuestionEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["questionId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ]
+)
+data class UserAnswerEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val testAttemptId: Long,
+    val questionId: Int,
+    val selectedOption: String, // "A", "B", "C", o "D"
+    val isCorrect: Boolean
+)

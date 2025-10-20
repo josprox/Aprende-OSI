@@ -43,11 +43,31 @@ fun AppNavGraph(
         }
 
         composable(
-            route = AppScreen.Quiz.route,
-            arguments = listOf(navArgument("moduleId") { type = NavType.IntType })
+            route = AppScreen.Quiz.route, // Asumimos que la ruta es "quiz/{moduleId}?attemptId={attemptId}"
+            arguments = listOf(
+                navArgument("moduleId") { type = NavType.IntType },
+                navArgument("attemptId") {
+                    type = NavType.LongType
+                    defaultValue = 0L // 0L se usará para indicar "Test Nuevo"
+                }
+            )
         ) { backStackEntry ->
+            // El moduleId lo pasamos a la pantalla,
+            // el ViewModel se encargará de leer ambos (moduleId y attemptId)
             val moduleId = backStackEntry.arguments?.getInt("moduleId") ?: 0
-            QuizScreen(navController = navController, moduleId = moduleId)
+            QuizScreen(
+                navController = navController,
+                moduleId = moduleId
+                // No pasamos el attemptId, el ViewModel lo tomará del SavedStateHandle
+            )
+        }
+
+        composable(
+            route = AppScreen.TestReview.route,
+            arguments = listOf(navArgument("attemptId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val attemptId = backStackEntry.arguments?.getLong("attemptId") ?: 0L
+            TestReviewScreen(navController = navController, attemptId = attemptId)
         }
     }
 }

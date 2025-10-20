@@ -16,8 +16,21 @@ sealed class AppScreen(val route: String) {
         fun createRoute(moduleId: Int) = "module_detail/$moduleId"
     }
 
-    object Quiz : AppScreen("quiz/{moduleId}") {
-        fun createRoute(moduleId: Int) = "quiz/$moduleId"
+    // --- REEMPLAZA TU OBJECT QUIZ CON ESTE ---
+    object Quiz : AppScreen("quiz/{moduleId}?attemptId={attemptId}") {
+
+        /**
+         * Para empezar un test NUEVO desde la lista de módulos.
+         */
+        fun createRoute(moduleId: Int) = "quiz/$moduleId?attemptId=0" // 0L indica test nuevo
+
+        /**
+         * Para RESUMIR un test desde la pantalla de "Test" (pendientes).
+         */
+        fun resumeRoute(moduleId: Int, attemptId: Long) = "quiz/$moduleId?attemptId=$attemptId"
+    }
+    object TestReview : AppScreen("test_review/{attemptId}") {
+        fun createRoute(attemptId: Long) = "test_review/$attemptId"
     }
 }
 
