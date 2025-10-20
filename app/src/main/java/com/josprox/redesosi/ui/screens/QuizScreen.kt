@@ -1,7 +1,9 @@
 package com.josprox.redesosi.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState // <-- AÑADIR IMPORT
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll // <-- AÑADIR IMPORT
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -45,36 +47,50 @@ fun QuizScreen(
                 )
             } else {
                 val currentQuestion = uiState.questions[uiState.currentQuestionIndex]
+
+                // --- CAMBIO: Esta es la Columna EXTERNA. Fija el botón abajo ---
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(
-                        text = "Pregunta ${uiState.currentQuestionIndex + 1}/${uiState.questions.size}",
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                    Text(text = currentQuestion.questionText, style = MaterialTheme.typography.headlineSmall)
 
-                    // Ahora la lista incluye las 4 opciones
-                    val options = listOf(
-                        "A" to currentQuestion.optionA,
-                        "B" to currentQuestion.optionB,
-                        "C" to currentQuestion.optionC,
-                        "D" to currentQuestion.optionD
-                    )
-                    // ---------------------------
-
-                    // Este 'forEach' ahora iterará 4 veces
-                    options.forEach { (key, text) ->
-                        AnswerOption(
-                            text = text,
-                            isSelected = uiState.selectedAnswer == key,
-                            onSelected = { viewModel.onAnswerSelected(key) }
+                    // --- AÑADIDO: Esta Columna INTERNA es la que se puede scrollear ---
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f) // <-- 1. Ocupa todo el espacio disponible
+                            .verticalScroll(rememberScrollState()), // <-- 2. PERMITE EL SCROLL
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = "Pregunta ${uiState.currentQuestionIndex + 1}/${uiState.questions.size}",
+                            style = MaterialTheme.typography.labelLarge
                         )
-                    }
 
-                    Spacer(modifier = Modifier.weight(1f))
+                        // <-- 3. Este texto ahora se puede scrollear si es largo
+                        Text(text = currentQuestion.questionText, style = MaterialTheme.typography.headlineSmall)
 
+                        val options = listOf(
+                            "A" to currentQuestion.optionA,
+                            "B" to currentQuestion.optionB,
+                            "C" to currentQuestion.optionC,
+                            "D" to currentQuestion.optionD
+                        )
+
+                        options.forEach { (key, text) ->
+                            AnswerOption(
+                                text = text,
+                                isSelected = uiState.selectedAnswer == key,
+                                onSelected = { viewModel.onAnswerSelected(key) }
+                            )
+                        }
+                    } // --- Fin de la Columna scrolleable ---
+
+
+                    // --- ELIMINADO: Ya no necesitamos el Spacer(weight(1f)) ---
+
+
+                    // <-- 4. El botón ahora es hijo de la Columna EXTERNA
                     Button(
                         onClick = { viewModel.onNextClicked() },
                         enabled = uiState.selectedAnswer != null,
@@ -87,6 +103,7 @@ fun QuizScreen(
         }
     }
 }
+
 @Composable
 fun AnswerOption(text: String, isSelected: Boolean, onSelected: () -> Unit) {
     Card(
