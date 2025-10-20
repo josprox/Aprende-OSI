@@ -49,8 +49,8 @@ class StudyRepository @Inject constructor(
             val newQuestions = groqApiService.generateQuestions(content, moduleId)
             if (newQuestions.isNotEmpty()) {
                 studyDao.insertQuestions(newQuestions)
-                questions = newQuestions // Asigna las nuevas preguntas para devolverlas
                 Log.d("StudyRepository", "Nuevas ${newQuestions.size} preguntas guardadas en la BD.")
+                questions = studyDao.getOriginalQuestionsForModule(moduleId)
             }
         } else {
             Log.d("StudyRepository", "Usando ${questions.size} preguntas existentes de la BD para $moduleId.")
@@ -114,6 +114,21 @@ class StudyRepository @Inject constructor(
 
     suspend fun getOriginalQuestionsForModule(moduleId: Int): List<QuestionEntity> {
         return studyDao.getOriginalQuestionsForModule(moduleId)
+    }
+
+    /**
+     * Borra permanentemente todas las preguntas, intentos y respuestas
+     * de un módulo específico para forzar la regeneración.
+     */
+    suspend fun forceRegenerateQuestions(moduleId: Int) {
+        // 1. Borra todos los intentos (completados y pendientes) y sus respuestas.
+        studyDao.deleteAttemptsForModule(moduleId)
+
+        // 2. Borra las preguntas viejas.
+        studyDao.deleteQuestionsForModule(moduleId)
+
+        // 3. ¡Listo! La próxima vez que QuizViewModel llame a
+        // getOrCreateQuestionsForModule(), las volverá a generar.
     }
 }
 

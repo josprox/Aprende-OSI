@@ -141,4 +141,11 @@ interface StudyDao {
     @Query("SELECT * FROM modules WHERE id = :moduleId LIMIT 1")
     suspend fun getModuleById(moduleId: Int): ModuleEntity?
 
+    /**
+     * Borra TODOS los intentos de examen (pendientes y completados)
+     * asociados a un módulo.
+     */
+    @Query("DELETE FROM test_attempts WHERE moduleId = :moduleId")
+    suspend fun deleteAttemptsForModule(moduleId: Int)
+
 }
