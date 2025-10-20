@@ -35,8 +35,6 @@ data class Message(val role: String, val content: String)
 @Serializable
 data class ResponseFormat(val type: String)
 
-// ✅ No necesitas cambiar tus data class.
-// La respuesta de Groq tiene más campos, pero ignoreUnknownKeys=true los omitirá.
 @Serializable
 data class GroqResponse(val choices: List<Choice>? = null)
 
@@ -59,6 +57,7 @@ data class QuizQuestion(
     val optionA: String,
     val optionB: String,
     val optionC: String,
+    val optionD: String, // <-- CAMBIO 1: Opción D añadida
     val correctAnswer: String
 )
 
@@ -67,12 +66,11 @@ class GroqApiService {
     private val jsonParser = Json {
         ignoreUnknownKeys = true
         prettyPrint = true
-        // isLenient = true // Puedes descomentar esto si la IA genera JSON inválido (ej. comas extra)
+        isLenient = true
     }
 
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
-            // ✅ --- 2. USA EL MISMO PARSER AQUÍ ---
             json(jsonParser)
         }
     }
@@ -90,23 +88,36 @@ class GroqApiService {
             return emptyList()
         }
 
+        // --- CAMBIO 2: Prompt "Nivel EGEL" mejorado ---
         val prompt = """
-            Basado en el siguiente contenido sobre redes de computadoras, genera mínimo 15 preguntas de opción múltiple (A, B, C), máximo 50 preguntas.
-            El contenido es: "$moduleContent".
-            
-            Debes devolver la respuesta únicamente en formato JSON, con la siguiente estructura:
+            ACTÚA COMO UN EXPERTO DISEÑADOR DE EXÁMENES DE CERTIFICACIÓN (EGEL, CCNA).
+            Tu objetivo es crear un banco de preguntas de alta dificultad para un examen de nivel licenciatura, basado estrictamente en el siguiente contenido: "$moduleContent".
+
+            REGLAS CRÍTICAS PARA LAS PREGUNTAS:
+            1.  **Formato:** Genera entre 15 y 30 preguntas de opción múltiple. (Prioriza calidad sobre cantidad).
+            2.  **Opciones:** 4 opciones de respuesta (A, B, C, D).
+            3.  **Complejidad (Nivel Licenciatura/EGEL):**
+                * Las preguntas deben forzar el **ANÁLISIS**, la **APLICACIÓN** o la **COMPARACIÓN** de conceptos, no la simple memorización.
+                * **Distractores Plausibles (CRÍTICO):** Las 3 opciones incorrectas deben ser *altamente plausibles*, *sutiles* y *conceptualmente muy cercanas* a la respuesta correcta. Evita opciones obviamente incorrectas o absurdas. El objetivo es hacer dudar a un estudiante avanzado.
+            4.  **Tipos de Pregunta Preferidos:**
+                * **Escenario:** "Dada esta situación/problema, ¿qué capa/protocolo es responsable?"
+                * **Comparativas:** "¿Cuál es la diferencia *clave* entre el Protocolo X y el Protocolo Y en el contexto de...?"
+                * **Diagnóstico:** "Un usuario experimenta [PROBLEMA]. ¿En qué capa es más probable que resida la falla?"
+
+            FORMATO DE SALIDA OBLIGATORIO:
+            Responde *únicamente* con el objeto JSON. No incluyas texto introductorio, saludos, explicaciones ni markdown. La estructura exacta es:
             {
               "questions": [
                 {
                   "questionText": "Texto de la pregunta...",
-                  "optionA": "Opción A",
-                  "optionB": "Opción B",
-                  "optionC": "Opción C",
-                  "correctAnswer": "A"
+                  "optionA": "Opción A (distractor plausible)",
+                  "optionB": "Opción B (distractor plausible)",
+                  "optionC": "Opción C (respuesta correcta)",
+                  "optionD": "Opción D (distractor plausible)",
+                  "correctAnswer": "C"
                 }
               ]
             }
-            Asegúrate de que la respuesta sea solo el objeto JSON, sin texto adicional ni markdown.
         """.trimIndent()
 
         val request = GroqRequest(
@@ -124,19 +135,28 @@ class GroqApiService {
 
             Log.d("GroqApiService", "📩 Respuesta cruda de Groq: $rawResponse")
 
-            // --- 2️⃣ Si contiene error, loguéalo y detén ---
-            if ("error" in rawResponse.lowercase()) {
-                // ✅ --- 3. USA EL PARSER CONFIGURADO ---
-                val errorObj = jsonParser.decodeFromString<GroqError>(rawResponse)
-                Log.e("GroqApiService", "❌ Error desde Groq API: ${errorObj.error?.message}")
+            // --- CAMBIO 3: Lógica 'try/catch' MEJORADA para evitar falsos positivos ---
+
+            // --- 2️⃣ Decodificar la respuesta (Intento de Éxito) ---
+            val response: GroqResponse
+            try {
+                // Intentamos decodificar como una respuesta de ÉXITO
+                response = jsonParser.decodeFromString<GroqResponse>(rawResponse)
+            } catch (e: Exception) {
+                // --- 3️⃣ Si falla, ASUMIMOS que es un ERROR de API ---
+                Log.w("GroqApiService", "No se pudo decodificar como GroqResponse (éxito), intentando como GroqError. Razón: ${e.message}")
+                try {
+                    // Ahora sí, intentamos decodificar como un objeto de ERROR
+                    val errorObj = jsonParser.decodeFromString<GroqError>(rawResponse)
+                    Log.e("GroqApiService", "❌ Error REAL desde Groq API: ${errorObj.error?.message}")
+                } catch (parseError: Exception) {
+                    // Si falla AMBOS, la respuesta es irreconocible
+                    Log.e("GroqApiService", "💥 Error CRÍTICO: No se pudo decodificar la respuesta ni como Éxito ni como Error: ${parseError.message}")
+                }
                 return emptyList()
             }
 
-            // --- 3️⃣ Decodificar la respuesta ---
-            // ✅ --- 4. USA EL PARSER CONFIGURADO ---
-            // Aquí es donde ocurría tu error. Ahora usará la instancia correcta.
-            val response = jsonParser.decodeFromString<GroqResponse>(rawResponse)
-
+            // --- 4️⃣ Si llegamos aquí, 'response' es un objeto GroqResponse válido ---
             val jsonContent = response.choices?.firstOrNull()?.message?.content
             if (jsonContent == null) {
                 Log.e("GroqApiService", "⚠️ No se recibió contenido en 'choices'.")
@@ -145,16 +165,15 @@ class GroqApiService {
 
             Log.d("GroqApiService", "🧠 Contenido recibido del modelo: $jsonContent")
 
-            // --- 4️⃣ Intentar decodificar el JSON generado por el modelo ---
+            // --- 5️⃣ Intentar decodificar el JSON generado por el modelo ---
             val quizPayload = try {
-                // ✅ --- 5. USA EL PARSER CONFIGURADO (también aquí) ---
                 jsonParser.decodeFromString<QuizPayload>(jsonContent)
             } catch (parseError: Exception) {
                 Log.e("GroqApiService", "❗ Error al parsear el JSON generado por el modelo: ${parseError.message}")
                 return emptyList()
             }
 
-            // --- 5️⃣ Convertir a entidades ---
+            // --- 6️⃣ Convertir a entidades ---
             val questions = quizPayload.questions.map {
                 QuestionEntity(
                     moduleId = moduleId,
@@ -162,6 +181,7 @@ class GroqApiService {
                     optionA = it.optionA,
                     optionB = it.optionB,
                     optionC = it.optionC,
+                    optionD = it.optionD, // <-- CAMBIO 4: Mapeo de optionD
                     correctAnswer = it.correctAnswer
                 )
             }

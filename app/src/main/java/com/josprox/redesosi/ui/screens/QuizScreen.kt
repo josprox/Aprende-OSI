@@ -55,8 +55,16 @@ fun QuizScreen(
                     )
                     Text(text = currentQuestion.questionText, style = MaterialTheme.typography.headlineSmall)
 
-                    val options = listOf("A" to currentQuestion.optionA, "B" to currentQuestion.optionB, "C" to currentQuestion.optionC)
+                    // Ahora la lista incluye las 4 opciones
+                    val options = listOf(
+                        "A" to currentQuestion.optionA,
+                        "B" to currentQuestion.optionB,
+                        "C" to currentQuestion.optionC,
+                        "D" to currentQuestion.optionD
+                    )
+                    // ---------------------------
 
+                    // Este 'forEach' ahora iterará 4 veces
                     options.forEach { (key, text) ->
                         AnswerOption(
                             text = text,
@@ -79,7 +87,6 @@ fun QuizScreen(
         }
     }
 }
-
 @Composable
 fun AnswerOption(text: String, isSelected: Boolean, onSelected: () -> Unit) {
     Card(
