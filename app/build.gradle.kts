@@ -12,7 +12,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.josprox.redesosi"
+        applicationId = "com.josprox.aprendemas"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
