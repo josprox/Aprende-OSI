@@ -91,7 +91,7 @@ class GroqApiService {
         }
 
         val prompt = """
-            Basado en el siguiente contenido sobre redes de computadoras, genera mínimo 5 preguntas de opción múltiple (A, B, C), máximo 50 preguntas.
+            Basado en el siguiente contenido sobre redes de computadoras, genera mínimo 15 preguntas de opción múltiple (A, B, C), máximo 50 preguntas.
             El contenido es: "$moduleContent".
             
             Debes devolver la respuesta únicamente en formato JSON, con la siguiente estructura:
