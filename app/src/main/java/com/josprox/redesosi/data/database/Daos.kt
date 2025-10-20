@@ -134,4 +134,11 @@ interface StudyDao {
      */
     @Query("SELECT * FROM questions WHERE moduleId = :moduleId ORDER BY id ASC") // <-- AÑADE ESTA FUNCIÓN
     suspend fun getOriginalQuestionsForModule(moduleId: Int): List<QuestionEntity>
+
+    /**
+     * Obtiene un módulo específico por su ID.
+     */
+    @Query("SELECT * FROM modules WHERE id = :moduleId LIMIT 1")
+    suspend fun getModuleById(moduleId: Int): ModuleEntity?
+
 }

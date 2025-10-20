@@ -107,5 +107,13 @@ class StudyRepository @Inject constructor(
     suspend fun updateTestAttempt(attempt: TestAttemptEntity) {
         studyDao.updateTestAttempt(attempt)
     }
+
+    suspend fun getModuleById(moduleId: Int): ModuleEntity? {
+        return studyDao.getModuleById(moduleId)
+    }
+
+    suspend fun getOriginalQuestionsForModule(moduleId: Int): List<QuestionEntity> {
+        return studyDao.getOriginalQuestionsForModule(moduleId)
+    }
 }
 
