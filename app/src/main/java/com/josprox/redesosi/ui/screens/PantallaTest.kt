@@ -1,66 +1,42 @@
 package com.josprox.redesosi.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import com.josprox.redesosi.vm.TestViewModel
+import androidx.navigation.NavController
 
 @Composable
 fun PantallaTest(
-    navController: NavHostController,
-    viewModel: TestViewModel = viewModel()
-) {
-    val uiState by viewModel.uiState.collectAsState()
-
-    TestContent(
-        titulo = uiState.titulo,
-        botonTexto = uiState.botonTexto,
-        onEmpezarTestClicked = {
-            viewModel.onEmpezarTestClicked(navController)
-        }
-    )
-}
-
-@Composable
-private fun TestContent(
-    titulo: String,
-    botonTexto: String,
-    onEmpezarTestClicked: () -> Unit,
+    navController: NavController,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = titulo,
+            text = "Verifica tus conocimientos",
             style = MaterialTheme.typography.headlineMedium,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
+            textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(16.dp))
-        Button(
-            onClick = onEmpezarTestClicked,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(botonTexto)
+        Text(
+            text = "Esta sección mostrará los tests disponibles o un historial.",
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(32.dp))
+        Button(onClick = { /* Lógica futura, como ir al último test */ }) {
+            Text("Empezar Skills Test")
         }
     }
 }

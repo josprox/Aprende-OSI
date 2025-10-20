@@ -11,7 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import com.josprox.redesosi.navigation.AppNavGraph
 import com.josprox.redesosi.ui.theme.RedesOSITheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,13 +24,13 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    // 1. Se crea el NavController aquí, en el nivel más alto.
                     val navController = rememberNavController()
-                    AppNavGraph(
-                        navController = navController,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    // 2. Se pasa el NavController al grafo de navegación.
+                    AppNavGraph(navController = navController)
                 }
             }
         }
     }
 }
+

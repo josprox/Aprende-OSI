@@ -1,14 +1,9 @@
 pluginManagement {
     repositories {
-        google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
-            }
-        }
+        google()
         mavenCentral()
         gradlePluginPortal()
+        // maven { url = uri("https://jitpack.io") } // <-- QUITA ESTA LÍNEA DE AQUÍ
     }
 }
 dependencyResolutionManagement {
@@ -16,8 +11,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
-rootProject.name = "redesOSI"
+rootProject.name = "RedesOSI"
 include(":app")
