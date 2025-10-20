@@ -1,16 +1,19 @@
 package com.josprox.redesosi.ui.screens
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Replay
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,6 +21,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -114,42 +118,34 @@ fun TestItemCard(
     isPending: Boolean = true,
     onClick: () -> Unit
 ) {
-    Card(
+    // --- CAMBIO: Usamos ElevatedCard + ListItem ---
+    ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = MaterialTheme.shapes.medium
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+        ListItem(
+            headlineContent = {
                 Text(
                     text = test.moduleTitle,
-                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                if (isPending) {
-                    Text(
-                        text = "En progreso...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                } else {
-                    Text(
-                        text = "Calificación: %.1f".format(test.attempt.score),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
-            Icon(
-                imageVector = if (isPending) Icons.Default.Replay else Icons.Default.ArrowForward,
-                contentDescription = if (isPending) "Resumir" else "Revisar"
-            )
-        }
+            },
+            supportingContent = {
+                Text(
+                    text = if (isPending) "En progreso..." else "Calificación: %.1f".format(test.attempt.score),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (isPending) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            trailingContent = {
+                Icon(
+                    imageVector = if (isPending) Icons.Default.Replay else Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = if (isPending) "Resumir" else "Revisar"
+                )
+            },
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+        )
     }
 }

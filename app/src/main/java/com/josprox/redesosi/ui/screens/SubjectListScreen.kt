@@ -2,16 +2,33 @@ package com.josprox.redesosi.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.ExperimentalFoundationApi // <-- AÑADIR IMPORT
-import androidx.compose.foundation.combinedClickable // <-- AÑADIR IMPORT
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -19,7 +36,7 @@ import androidx.navigation.NavController
 import com.josprox.redesosi.navigation.AppScreen
 import com.josprox.redesosi.vm.SubjectViewModel
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class) // <-- AÑADIR ExperimentalFoundationApi
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SubjectListScreen(
     navController: NavController,
@@ -27,7 +44,6 @@ fun SubjectListScreen(
 ) {
     val subjects by viewModel.subjects.collectAsState(initial = emptyList())
 
-    // --- AÑADIDO: Observar el estado del diálogo de borrado ---
     val subjectToDelete by viewModel.subjectToDelete.collectAsState()
 
     val filePickerLauncher = rememberLauncherForActivityResult(
@@ -42,11 +58,19 @@ fun SubjectListScreen(
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Materias") })
+        },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = {
+                    filePickerLauncher.launch(arrayOf("application/json"))
+                },
+                icon = { Icon(Icons.Default.FileUpload, contentDescription = "Añadir materia") },
+                text = { Text("Añadir Materia") }
+            )
         }
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
 
-            // --- AÑADIDO: Diálogo de confirmación para borrar ---
             subjectToDelete?.let { subject ->
                 AlertDialog(
                     onDismissRequest = { viewModel.onDismissDeleteDialog() },
@@ -67,20 +91,18 @@ fun SubjectListScreen(
                     }
                 )
             }
-            // --- FIN DE LO AÑADIDO ---
 
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(top = 16.dp, bottom = 96.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(subjects) { subject ->
-                    Card(
+                    ElevatedCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            // --- CAMBIADO: Usamos combinedClickable ---
                             .combinedClickable(
                                 onClick = {
                                     // Click normal: navega
@@ -90,8 +112,8 @@ fun SubjectListScreen(
                                     // Click largo: muestra diálogo de borrado
                                     viewModel.onSubjectLongPress(subject)
                                 }
-                            )
-                        // --- FIN DEL CAMBIO ---
+                            ),
+                        shape = MaterialTheme.shapes.medium
                     ) {
                         Text(
                             text = subject.name,
@@ -100,18 +122,6 @@ fun SubjectListScreen(
                         )
                     }
                 }
-            }
-
-            Button(
-                onClick = {
-                    filePickerLauncher.launch(arrayOf("application/json"))
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-            ) {
-                Text("Añadir Materia desde JSON")
             }
         }
     }

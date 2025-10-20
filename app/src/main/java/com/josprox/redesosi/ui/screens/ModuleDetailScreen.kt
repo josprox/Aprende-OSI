@@ -6,26 +6,29 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh // <-- Import
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope // <-- Import
+import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.halilibo.richtext.markdown.Markdown
 import com.halilibo.richtext.ui.material3.RichText
 import com.josprox.redesosi.data.database.SubmoduleEntity
 import com.josprox.redesosi.data.repository.StudyRepository
 import com.josprox.redesosi.navigation.AppScreen
+import com.josprox.redesosi.ui.theme.RedesOSITheme
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow // <-- Import
-import kotlinx.coroutines.flow.asStateFlow // <-- Import
-import kotlinx.coroutines.launch // <-- Import
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 //=================================================================
@@ -59,14 +62,9 @@ class ModuleDetailViewModel @Inject constructor(
 
     // Esto se llama al confirmar el diálogo
     fun onRegenerateConfirm() {
-        _showConfirmDialog.value = false // Oculta el diálogo
+        _showConfirmDialog.value = false
         viewModelScope.launch {
-            // 1. Llama a la función destructiva
-            // ESTO SOLO AFECTA AL 'moduleId' ACTUAL
             repository.forceRegenerateQuestions(moduleId)
-
-            // 2. Aquí puedes añadir un Toast si quieres notificar al usuario
-            // (requiere inyectar el 'Application' en el ViewModel)
         }
     }
 }
@@ -84,10 +82,26 @@ fun ModuleDetailScreen(
     val submodules by viewModel.submodules.collectAsState(initial = emptyList())
     val showDialog by viewModel.showConfirmDialog.collectAsState()
 
+    // --- Comportamiento de scroll para la TopAppBar ---
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    // El título se basará en el primer submódulo, o un default
+    // Asumiendo que SubmoduleEntity tiene 'moduleTitle'
+    val title = submodules.firstOrNull()?.let { "Detalle del Módulo" } ?: "Cargando..." // Ajusta esto si 'moduleTitle' está en otro lado
+
+
     Scaffold(
+        // --- Modificador para conectar el scroll ---
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text(submodules.firstOrNull()?.let { "Detalle del Módulo" } ?: "Cargando...") },
+            // ---  Usamos MediumTopAppBar ---
+            MediumTopAppBar(
+                title = {
+                    Text(
+                        text = title, // Usa el título dinámico
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
@@ -101,7 +115,9 @@ fun ModuleDetailScreen(
                             contentDescription = "Regenerar preguntas"
                         )
                     }
-                }
+                },
+                // --- Pasamos el comportamiento de scroll ---
+                scrollBehavior = scrollBehavior
             )
         },
         floatingActionButton = {
@@ -145,21 +161,25 @@ fun ModuleDetailScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(bottom = 80.dp) // Espacio para el FAB
+            contentPadding = PaddingValues(bottom = 96.dp) // <--  Espacio para el FAB
         ) {
             items(submodules) { submodule ->
-                Column(Modifier.padding(vertical = 8.dp)) {
+                Column(Modifier.padding(vertical = 16.dp)) {
                     Text(submodule.title, style = MaterialTheme.typography.headlineSmall)
                     Spacer(Modifier.height(8.dp))
-                    RichText(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Markdown(
-                            content = submodule.contentMd
-                        )
+
+                    // --- Tema para el Markdown ---
+                    RedesOSITheme {
+                        RichText(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Markdown(
+                                content = submodule.contentMd
+                            )
+                        }
                     }
 
-                    Divider(modifier = Modifier.padding(top = 16.dp))
+                    HorizontalDivider(modifier = Modifier.padding(top = 24.dp))
                 }
             }
         }

@@ -5,11 +5,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
@@ -58,18 +60,34 @@ fun ModuleListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(top = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(modules) { module ->
-                Card(
-                    onClick = { navController.navigate(AppScreen.ModuleDetail.createRoute(module.id)) }
+                // --- Usamos ElevatedCard + ListItem ---
+                ElevatedCard(
+                    onClick = { navController.navigate(AppScreen.ModuleDetail.createRoute(module.id)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium
                 ) {
-                    Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                        Text(text = module.title, style = MaterialTheme.typography.titleLarge)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = module.shortDescription, style = MaterialTheme.typography.bodyMedium)
-                    }
+                    ListItem(
+                        headlineContent = {
+                            Text(text = module.title, style = MaterialTheme.typography.titleMedium)
+                        },
+                        supportingContent = {
+                            Text(text = module.shortDescription, style = MaterialTheme.typography.bodyMedium)
+                        },
+                        trailingContent = {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowForwardIos,
+                                contentDescription = "Ver detalle",
+                                modifier = Modifier.size(16.dp) // <-- Icono sutil
+                            )
+                        },
+                        // Hacemos el fondo del ListItem transparente para que use el color de la tarjeta
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
                 }
             }
         }

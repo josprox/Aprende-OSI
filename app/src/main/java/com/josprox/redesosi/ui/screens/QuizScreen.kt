@@ -24,14 +24,22 @@ fun QuizScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // --- Cálculo del progreso ---
+    val progress = if (uiState.questions.isNotEmpty() && !uiState.isQuizFinished) {
+        (uiState.currentQuestionIndex.toFloat()) / uiState.questions.size.toFloat()
+    } else if (uiState.isQuizFinished) {
+        1f // Completo al finalizar
+    } else {
+        0f // Cargando
+    }
+
     Scaffold(
         topBar = { TopAppBar(title = { Text("Test de Conocimientos") }) }
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
+                .padding(paddingValues),
             contentAlignment = Alignment.Center
         ) {
             if (uiState.isLoading) {
@@ -48,27 +56,37 @@ fun QuizScreen(
             } else {
                 val currentQuestion = uiState.questions[uiState.currentQuestionIndex]
 
-                // --- CAMBIO: Esta es la Columna EXTERNA. Fija el botón abajo ---
                 Column(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
 
-                    // --- AÑADIDO: Esta Columna INTERNA es la que se puede scrollear ---
+                    // --- Barra de Progreso ---
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp) // Añadimos padding
+                    )
+
+                    // --- Esta Columna INTERNA es la que se puede scrollear ---
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f) // <-- 1. Ocupa todo el espacio disponible
-                            .verticalScroll(rememberScrollState()), // <-- 2. PERMITE EL SCROLL
+                            .weight(1f) // <-- 1. Ocupa el espacio disponible
+                            .verticalScroll(rememberScrollState()) // <-- PERMITE EL SCROLL
+                            .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Text(
                             text = "Pregunta ${uiState.currentQuestionIndex + 1}/${uiState.questions.size}",
-                            style = MaterialTheme.typography.labelLarge
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        // <-- 3. Este texto ahora se puede scrollear si es largo
+                        // <-- Este texto ahora se puede scrollear si es largo
                         Text(text = currentQuestion.questionText, style = MaterialTheme.typography.headlineSmall)
+
+                        Spacer(Modifier.height(8.dp)) // <-- AÑADIDO
 
                         val options = listOf(
                             "A" to currentQuestion.optionA,
@@ -84,17 +102,15 @@ fun QuizScreen(
                                 onSelected = { viewModel.onAnswerSelected(key) }
                             )
                         }
-                    } // --- Fin de la Columna scrolleable ---
+                    }
 
-
-                    // --- ELIMINADO: Ya no necesitamos el Spacer(weight(1f)) ---
-
-
-                    // <-- 4. El botón ahora es hijo de la Columna EXTERNA
+                    // <-- El botón ahora es hijo de la Columna EXTERNA
                     Button(
                         onClick = { viewModel.onNextClicked() },
                         enabled = uiState.selectedAnswer != null,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
                     ) {
                         Text(if (uiState.currentQuestionIndex < uiState.questions.size - 1) "Siguiente" else "Finalizar")
                     }
@@ -106,6 +122,15 @@ fun QuizScreen(
 
 @Composable
 fun AnswerOption(text: String, isSelected: Boolean, onSelected: () -> Unit) {
+    // --- Usamos OutlinedCard para no seleccionada y FilledCard para seleccionada ---
+    val cardColors = if (isSelected) {
+        CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+    } else {
+        CardDefaults.outlinedCardColors()
+    }
+
+    val border = if (isSelected) null else CardDefaults.outlinedCardBorder()
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -113,9 +138,9 @@ fun AnswerOption(text: String, isSelected: Boolean, onSelected: () -> Unit) {
                 selected = isSelected,
                 onClick = onSelected
             ),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-        )
+        colors = cardColors,
+        border = border,
+        shape = MaterialTheme.shapes.medium // <-- Bordes M3
     ) {
         Row(
             modifier = Modifier
@@ -125,7 +150,7 @@ fun AnswerOption(text: String, isSelected: Boolean, onSelected: () -> Unit) {
         ) {
             RadioButton(selected = isSelected, onClick = null)
             Spacer(modifier = Modifier.width(16.dp))
-            Text(text = text)
+            Text(text = text, style = MaterialTheme.typography.bodyLarge)
         }
     }
 }

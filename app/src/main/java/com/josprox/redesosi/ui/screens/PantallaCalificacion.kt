@@ -1,10 +1,17 @@
 package com.josprox.redesosi.ui.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,7 +61,7 @@ fun PantallaCalificacion(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp) // <-- CAMBIO
             ) {
                 items(completedTests) { testWithModule ->
                     TestResultCard(testWithModule)
@@ -67,38 +74,38 @@ fun PantallaCalificacion(
 @Composable
 fun TestResultCard(test: TestAttemptWithModule) {
     val attempt = test.attempt
-    val approvalScore = 8.0 // Tu lógica de aprobación
+    val approvalScore = 8.0
     val isApproved = attempt.score >= approvalScore
-    val scoreColor = if (isApproved) Color(0xFF008000) else MaterialTheme.colorScheme.error
+    val scoreColor = if (isApproved) Color(0xFF006400) else MaterialTheme.colorScheme.error // <-- CAMBIO
 
-    Card(
+    // --- Usamos ElevatedCard + ListItem ---
+    ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = MaterialTheme.shapes.medium
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+        ListItem(
+            headlineContent = {
                 Text(
                     text = test.moduleTitle,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
+            },
+            supportingContent = {
                 Text(
                     text = "Resultado: ${attempt.correctAnswers} / ${attempt.totalQuestions}",
                     style = MaterialTheme.typography.bodyMedium
                 )
-            }
-            Text(
-                text = "%.1f".format(attempt.score), // Formatea a 1 decimal
-                style = MaterialTheme.typography.headlineSmall,
-                color = scoreColor,
-                fontWeight = FontWeight.Bold
-            )
-        }
+            },
+            trailingContent = {
+                Text(
+                    text = "%.1f".format(attempt.score), // Formatea a 1 decimal
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = scoreColor,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+        )
     }
 }

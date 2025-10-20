@@ -21,6 +21,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -30,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -95,11 +97,13 @@ fun TestReviewScreen(
 fun TestResultHeader(title: String, score: Double, correct: Int, total: Int) {
     val approvalScore = 8.0
     val isApproved = score >= approvalScore
-    val scoreColor = if (isApproved) Color(0xFF008000) else MaterialTheme.colorScheme.error
+    val scoreColor = if (isApproved) Color(0xFF006400) else MaterialTheme.colorScheme.error
 
+    // --- CAMBIO: Usamos Card normal con CardDefaults.filledTonalCardColors() ---
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(4.dp)
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.elevatedCardColors()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -133,8 +137,10 @@ fun ReviewQuestionCard(reviewedQuestion: ReviewedQuestion) {
     val question = reviewedQuestion.question
     val userAnswer = reviewedQuestion.userAnswer
 
-    Card(
-        modifier = Modifier.fillMaxWidth()
+    // --- Tarjeta más sutil ---
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -165,6 +171,14 @@ fun ReviewQuestionCard(reviewedQuestion: ReviewedQuestion) {
     }
 }
 
+// --- Data class para solucionar el error de Triple ---
+private data class AnswerStyle(
+    val backgroundColor: Color,
+    val icon: ImageVector?,
+    val iconColor: Color,
+    val contentColor: Color
+)
+
 @Composable
 fun AnswerReviewOption(
     text: String,
@@ -175,30 +189,38 @@ fun AnswerReviewOption(
     val isCorrect = optionKey == correctAnswer
     val isSelected = optionKey == userSelection
 
-    val (backgroundColor, icon, iconColor) = when {
-        // Opción correcta
-        isCorrect -> Triple(
-            Color(0xFFE6F4EA), // Verde claro
-            Icons.Default.Check,
-            Color(0xFF008000)  // Verde oscuro
+    // --- Lógica de color ahora usa el data class ---
+    val (backgroundColor, icon, iconColor, contentColor) = when {
+        // Opción correcta (siempre se marca)
+        isCorrect -> AnswerStyle(
+            backgroundColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.8f),
+            icon = Icons.Default.Check,
+            iconColor = MaterialTheme.colorScheme.onTertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
         )
         // Opción que el usuario eligió y estaba INCORRECTA
-        isSelected && !isCorrect -> Triple(
-            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
-            Icons.Default.Close,
-            MaterialTheme.colorScheme.onErrorContainer
+        isSelected && !isCorrect -> AnswerStyle(
+            backgroundColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f),
+            icon = Icons.Default.Close,
+            iconColor = MaterialTheme.colorScheme.onErrorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer
         )
         // Opción neutral (ni correcta, ni seleccionada)
-        else -> Triple(
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-            null,
-            Color.Transparent
+        else -> AnswerStyle(
+            backgroundColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            icon = null,
+            iconColor = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor)
+        colors = CardDefaults.cardColors(
+            containerColor = backgroundColor,
+            contentColor = contentColor
+        ),
+        shape = MaterialTheme.shapes.medium
     ) {
         Row(
             modifier = Modifier
@@ -206,7 +228,11 @@ fun AnswerReviewOption(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = text, modifier = Modifier.weight(1f))
+            Text(
+                text = text,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodyLarge
+            )
             if (icon != null) {
                 Spacer(Modifier.width(8.dp))
                 Icon(

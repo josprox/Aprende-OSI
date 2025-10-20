@@ -2,9 +2,12 @@ package com.josprox.redesosi.ui.screens
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Create
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.School
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -24,10 +27,30 @@ import androidx.navigation.compose.rememberNavController
 import com.josprox.redesosi.navigation.AppScreen
 
 // Se definen los items del menú inferior
-private sealed class BottomNavItem(val route: String, val icon: ImageVector, val label: String) {
-    object Learn : BottomNavItem(AppScreen.SubjectList.route, Icons.Default.List, "Aprende")
-    object Test : BottomNavItem(AppScreen.Test.route, Icons.Default.Create, "Test")
-    object Grades : BottomNavItem(AppScreen.Grades.route, Icons.Default.CheckCircle, "Calificación")
+private sealed class BottomNavItem(
+    val route: String,
+    val filledIcon: ImageVector,
+    val outlinedIcon: ImageVector,
+    val label: String
+) {
+    object Learn : BottomNavItem(
+        AppScreen.SubjectList.route,
+        Icons.AutoMirrored.Filled.List,
+        Icons.AutoMirrored.Outlined.List,
+        "Aprende"
+    )
+    object Test : BottomNavItem(
+        AppScreen.Test.route,
+        Icons.Default.School,
+        Icons.Outlined.School,
+        "Test"
+    )
+    object Grades : BottomNavItem(
+        AppScreen.Grades.route,
+        Icons.Default.CheckCircle,
+        Icons.Outlined.CheckCircle,
+        "Calificación"
+    )
 }
 
 @Composable
@@ -42,10 +65,17 @@ fun MainScreen(mainNavController: NavHostController) {
                 val currentDestination = navBackStackEntry?.destination
 
                 navItems.forEach { screen ->
+                    val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+
                     NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = screen.label) },
+                        icon = {
+                            Icon(
+                                imageVector = if (isSelected) screen.filledIcon else screen.outlinedIcon,
+                                contentDescription = screen.label
+                            )
+                        },
                         label = { Text(screen.label) },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                        selected = isSelected,
                         onClick = {
                             bottomNavController.navigate(screen.route) {
                                 popUpTo(bottomNavController.graph.findStartDestination().id) {
@@ -67,7 +97,6 @@ fun MainScreen(mainNavController: NavHostController) {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(AppScreen.SubjectList.route) {
-                // Pasamos el NavController principal para poder navegar a otras pantallas
                 SubjectListScreen(navController = mainNavController)
             }
             composable(AppScreen.Test.route) {
@@ -79,4 +108,3 @@ fun MainScreen(mainNavController: NavHostController) {
         }
     }
 }
-
