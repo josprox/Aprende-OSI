@@ -36,4 +36,8 @@ interface StudyDao {
 
     @Query("SELECT COUNT(*) FROM subjects")
     suspend fun getSubjectCount(): Int
+
+    // Borra todas las preguntas asociadas a un módulo específico
+    @Query("DELETE FROM questions WHERE moduleId = :moduleId")
+    suspend fun deleteQuestionsForModule(moduleId: Int)
 }
