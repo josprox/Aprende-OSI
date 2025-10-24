@@ -3,6 +3,7 @@ package com.josprox.redesosi.data.database
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import androidx.room.Index // Importamos Index para definir los índices
 
 @Entity(tableName = "subjects")
 data class SubjectEntity(
@@ -17,7 +18,9 @@ data class SubjectEntity(
         parentColumns = ["id"],
         childColumns = ["subjectId"],
         onDelete = ForeignKey.CASCADE
-    )]
+    )],
+    // Solución para la advertencia de 'subjectId'
+    indices = [Index("subjectId")]
 )
 data class ModuleEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -33,7 +36,9 @@ data class ModuleEntity(
         parentColumns = ["id"],
         childColumns = ["moduleId"],
         onDelete = ForeignKey.CASCADE
-    )]
+    )],
+    // Solución para la advertencia de 'moduleId'
+    indices = [Index("moduleId")]
 )
 data class SubmoduleEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -49,7 +54,9 @@ data class SubmoduleEntity(
         parentColumns = ["id"],
         childColumns = ["moduleId"],
         onDelete = ForeignKey.CASCADE
-    )]
+    )],
+    // Solución para la advertencia de 'moduleId'
+    indices = [Index("moduleId")]
 )
 data class QuestionEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
@@ -61,7 +68,6 @@ data class QuestionEntity(
     val optionD: String,
     val correctAnswer: String // "A", "B", o "C"
 )
-// --- Añade estas dos nuevas clases en tu archivo DatabaseEntities.kt ---
 
 @Entity(
     tableName = "test_attempts",
@@ -70,7 +76,9 @@ data class QuestionEntity(
         parentColumns = ["id"],
         childColumns = ["moduleId"],
         onDelete = ForeignKey.CASCADE
-    )]
+    )],
+    // Solución para la advertencia de 'moduleId'
+    indices = [Index("moduleId")]
 )
 data class TestAttemptEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -98,6 +106,11 @@ data class TestAttemptEntity(
             childColumns = ["questionId"],
             onDelete = ForeignKey.CASCADE
         )
+    ],
+    // Solución para las advertencias de 'testAttemptId' y 'questionId'
+    indices = [
+        Index("testAttemptId"),
+        Index("questionId")
     ]
 )
 data class UserAnswerEntity(
