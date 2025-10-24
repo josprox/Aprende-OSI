@@ -2,12 +2,12 @@ package com.josprox.redesosi.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -15,13 +15,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -30,6 +33,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -37,7 +41,7 @@ import androidx.navigation.NavController
 import com.josprox.redesosi.navigation.AppScreen
 import com.josprox.redesosi.vm.SubjectViewModel
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SubjectListScreen(
     navController: NavController,
@@ -45,7 +49,6 @@ fun SubjectListScreen(
 ) {
     val subjects by viewModel.subjects.collectAsState(initial = emptyList())
 
-    // --- Ahora tenemos dos estados de diálogo ---
     val selectedSubject by viewModel.selectedSubject.collectAsState()
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
 
@@ -53,7 +56,6 @@ fun SubjectListScreen(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri ->
             if (uri != null) {
-                // --- Llamamos a la nueva función central ---
                 viewModel.processFile(uri)
             }
         }
@@ -66,10 +68,8 @@ fun SubjectListScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = {
-                    // --- Preparamos al VM para un IMPORT ---
                     viewModel.prepareForFileAction(SubjectViewModel.FileAction.IMPORT)
                     filePickerLauncher.launch(arrayOf("application/json"))
-                    
                 },
                 icon = { Icon(Icons.Default.FileUpload, contentDescription = "Añadir materia") },
                 text = { Text("Añadir Materia") }
@@ -78,9 +78,9 @@ fun SubjectListScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
 
-            // --- Diálogo de Opciones (se muestra primero) ---
+            // --- Diálogo de Opciones ---
             selectedSubject?.let { subject ->
-                if (!showDeleteDialog) { // Solo muestra este si NO estamos confirmando el borrado
+                if (!showDeleteDialog) {
                     AlertDialog(
                         onDismissRequest = { viewModel.onDismissOptionsDialog() },
                         title = { Text(subject.name) },
@@ -96,26 +96,18 @@ fun SubjectListScreen(
                         },
                         dismissButton = {
                             Column {
-                                // Botón para Actualizar
                                 TextButton(
                                     onClick = {
-                                        // 1. Prepara al VM para un UPDATE
                                         viewModel.prepareForFileAction(SubjectViewModel.FileAction.UPDATE)
-                                        // 2. Lanza el picker
                                         filePickerLauncher.launch(arrayOf("application/json"))
-                                        // 3. Cierra el diálogo de opciones
                                         viewModel.onDismissOptionsDialog()
                                     }
                                 ) {
                                     Text("Actualizar desde JSON")
                                 }
-
-                                // Botón para Eliminar (que abre el otro diálogo)
                                 TextButton(
                                     onClick = {
-                                        // 1. Cierra este diálogo
                                         viewModel.onDismissOptionsDialog()
-                                        // 2. Pide al VM que abra el diálogo de confirmación
                                         viewModel.onDeleteClicked()
                                     }
                                 ) {
@@ -128,7 +120,6 @@ fun SubjectListScreen(
             }
 
             // --- Diálogo de Confirmación de Borrado ---
-            // Ahora se controla por 'showDeleteDialog'
             if (showDeleteDialog) {
                 AlertDialog(
                     onDismissRequest = { viewModel.onDismissDeleteDialog() },
@@ -149,7 +140,7 @@ fun SubjectListScreen(
                     }
                 )
             }
-            
+
 
             LazyColumn(
                 modifier = Modifier
@@ -159,30 +150,51 @@ fun SubjectListScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(subjects) { subject ->
-                    ElevatedCard(
+
+                    Card(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .combinedClickable(
-                                onClick = {
-                                    navController.navigate(AppScreen.ModuleList.createRoute(subject.id))
-                                },
-                                onLongClick = {
-                                    viewModel.onSubjectLongPress(subject)
-                                }
-                            ),
-                        shape = MaterialTheme.shapes.medium
+                            .fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        )
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = subject.name,
-                                style = MaterialTheme.typography.titleLarge,
-                            )
-                            // Mostramos autor y versión
-                            Text(
-                                text = "Autor: ${subject.author} - v${subject.version}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f) // Ocupa el espacio disponible
+                                    .clickable { // <-- Acción de clic normal
+                                        navController.navigate(AppScreen.ModuleList.createRoute(subject.id))
+                                    }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp) // Padding ajustado
+                            ) {
+                                Text(
+                                    text = subject.name,
+                                    style = MaterialTheme.typography.titleMedium, // Un poco más pequeño
+                                    // El color correcto para texto sobre 'surfaceVariant'
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "Autor: ${subject.author} - v${subject.version}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            // --- Botón de Opciones (Kebab menu) ---
+                            IconButton(onClick = {
+                                viewModel.onSubjectLongPress(subject) // Muestra el diálogo de opciones
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "Opciones de la materia",
+                                    // Aseguramos que el icono también tenga el color correcto
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }

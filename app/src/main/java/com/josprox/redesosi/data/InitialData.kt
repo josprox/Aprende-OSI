@@ -14,7 +14,7 @@ object InitialData {
      * Lista de materias principales.
      */
     val subjects = listOf(
-        SubjectEntity(id = 1, name = "Redes de Computadoras",author = "Josprox", version = "1.0"),
+        SubjectEntity(id = 1, name = "Redes de Computadoras",author = "Melchor Estrada José Luis", version = "1.0"),
     )
 
     /**

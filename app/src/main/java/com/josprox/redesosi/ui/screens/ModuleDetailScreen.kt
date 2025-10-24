@@ -1,8 +1,10 @@
 package com.josprox.redesosi.ui.screens
 
+// import com.josprox.redesosi.ui.theme.RedesOSITheme // <-- ELIMINADO (ya no se usa aquí)
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
@@ -13,61 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.halilibo.richtext.markdown.Markdown
 import com.halilibo.richtext.ui.material3.RichText
-import com.josprox.redesosi.data.database.SubmoduleEntity
-import com.josprox.redesosi.data.repository.StudyRepository
 import com.josprox.redesosi.navigation.AppScreen
-import com.josprox.redesosi.ui.theme.RedesOSITheme
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import javax.inject.Inject
-
-//=================================================================
-// 1. VIEWMODEL
-//=================================================================
-@HiltViewModel
-class ModuleDetailViewModel @Inject constructor(
-    private val repository: StudyRepository,
-    savedStateHandle: SavedStateHandle
-) : ViewModel() {
-
-    // Obtenemos el ID del módulo desde el estado guardado
-    val moduleId: Int = checkNotNull(savedStateHandle["moduleId"])
-
-    // Este Flow de submódulos está perfecto
-    val submodules: Flow<List<SubmoduleEntity>> = repository.getSubmodulesForModule(moduleId)
-
-    // --- Lógica del Diálogo (Para "Regenerar") ---
-
-    private val _showConfirmDialog = MutableStateFlow(false)
-    val showConfirmDialog = _showConfirmDialog.asStateFlow()
-
-    // Esto se llama al presionar el botón de "Regenerar"
-    fun onRegenerateClicked() {
-        _showConfirmDialog.value = true
-    }
-
-    fun onDialogDismiss() {
-        _showConfirmDialog.value = false
-    }
-
-    // Esto se llama al confirmar el diálogo
-    fun onRegenerateConfirm() {
-        _showConfirmDialog.value = false
-        viewModelScope.launch {
-            repository.forceRegenerateQuestions(moduleId)
-        }
-    }
-}
+import com.josprox.redesosi.vm.ModuleDetailViewModel
 
 //=================================================================
 // 2. SCREEN COMPOSABLE
@@ -82,11 +36,11 @@ fun ModuleDetailScreen(
     val submodules by viewModel.submodules.collectAsState(initial = emptyList())
     val showDialog by viewModel.showConfirmDialog.collectAsState()
 
+    // --- MODIFICADO: Obtenemos el título real desde el ViewModel ---
+    val title by viewModel.moduleTitle.collectAsState()
+
     // --- Comportamiento de scroll para la TopAppBar ---
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
-    // El título se basará en el primer submódulo, o un default
-    // Asumiendo que SubmoduleEntity tiene 'moduleTitle'
-    val title = submodules.firstOrNull()?.let { "Detalle del Módulo" } ?: "Cargando..." // Ajusta esto si 'moduleTitle' está en otro lado
 
 
     Scaffold(
@@ -97,7 +51,7 @@ fun ModuleDetailScreen(
             MediumTopAppBar(
                 title = {
                     Text(
-                        text = title, // Usa el título dinámico
+                        text = title, // <-- Título dinámico
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -122,8 +76,6 @@ fun ModuleDetailScreen(
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
-                // Esto inicia un test nuevo (attemptId=0)
-                // NO borra el historial. Reutiliza las preguntas existentes.
                 onClick = { navController.navigate(AppScreen.Quiz.createRoute(moduleId)) },
                 icon = { Icon(Icons.Default.PlayArrow, contentDescription = "") },
                 text = { Text("Iniciar Test") }
@@ -159,19 +111,24 @@ fun ModuleDetailScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(bottom = 96.dp) // <--  Espacio para el FAB
+                .padding(paddingValues),
+            // Padding horizontal se aplica a cada item para que el scrollbar llegue al borde
+            contentPadding = PaddingValues(bottom = 96.dp) // <-- Espacio para el FAB
         ) {
             items(submodules) { submodule ->
-                Column(Modifier.padding(vertical = 16.dp)) {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp) // Padding horizontal aquí
+                        .padding(top = 16.dp, bottom = 24.dp) // Espaciado vertical
+                ) {
                     Text(submodule.title, style = MaterialTheme.typography.headlineSmall)
                     Spacer(Modifier.height(8.dp))
 
-                    // --- Tema para el Markdown ---
-                    RedesOSITheme {
+                    // --- AÑADIDO: Contenedor para seleccionar texto ---
+                    SelectionContainer {
                         RichText(
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
                             Markdown(
                                 content = submodule.contentMd
@@ -179,7 +136,7 @@ fun ModuleDetailScreen(
                         }
                     }
 
-                    HorizontalDivider(modifier = Modifier.padding(top = 24.dp))
+                    // --- ELIMINADO: HorizontalDivider ---
                 }
             }
         }
