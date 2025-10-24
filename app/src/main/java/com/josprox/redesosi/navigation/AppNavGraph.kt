@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.josprox.redesosi.ui.screens.*
+import com.josprox.redesosi.ui.screens.settings.BackupRestoreScreen
 
 @Composable
 fun AppNavGraph(
@@ -23,8 +24,6 @@ fun AppNavGraph(
         composable(route = AppScreen.Home.route) {
             MainScreen(mainNavController = navController)
         }
-
-        // --- El resto de las pantallas se mantienen para la navegación ---
 
         composable(
             route = AppScreen.ModuleList.route,
@@ -43,7 +42,7 @@ fun AppNavGraph(
         }
 
         composable(
-            route = AppScreen.Quiz.route, // Asumimos que la ruta es "quiz/{moduleId}?attemptId={attemptId}"
+            route = AppScreen.Quiz.route,
             arguments = listOf(
                 navArgument("moduleId") { type = NavType.IntType },
                 navArgument("attemptId") {
@@ -68,6 +67,9 @@ fun AppNavGraph(
         ) { backStackEntry ->
             val attemptId = backStackEntry.arguments?.getLong("attemptId") ?: 0L
             TestReviewScreen(navController = navController, attemptId = attemptId)
+        }
+        composable(route = AppScreen.BackupRestore.route) {
+            BackupRestoreScreen(navController = navController)
         }
     }
 }

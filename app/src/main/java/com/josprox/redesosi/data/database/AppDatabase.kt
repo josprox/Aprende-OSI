@@ -31,7 +31,6 @@ abstract class AppDatabase : RoomDatabase() {
                     "study_app_database"
                 )
                     .addCallback(DatabaseCallback(context))
-                    .fallbackToDestructiveMigration(false)
                     .build()
                 INSTANCE = instance
                 instance

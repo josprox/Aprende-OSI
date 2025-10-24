@@ -24,7 +24,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Settings
 import com.josprox.redesosi.navigation.AppScreen
+import com.josprox.redesosi.ui.screens.settings.SettingsScreen
 
 // Se definen los items del menú inferior
 private sealed class BottomNavItem(
@@ -51,12 +54,18 @@ private sealed class BottomNavItem(
         Icons.Outlined.CheckCircle,
         "Calificación"
     )
+    object Settings : BottomNavItem(
+        AppScreen.Settings.route,
+        Icons.Default.Settings,
+        Icons.Outlined.Settings,
+        "Ajustes"
+    )
 }
 
 @Composable
 fun MainScreen(mainNavController: NavHostController) {
     val bottomNavController = rememberNavController()
-    val navItems = listOf(BottomNavItem.Learn, BottomNavItem.Test, BottomNavItem.Grades)
+    val navItems = listOf(BottomNavItem.Learn, BottomNavItem.Test, BottomNavItem.Grades, BottomNavItem.Settings)
 
     Scaffold(
         bottomBar = {
@@ -104,6 +113,9 @@ fun MainScreen(mainNavController: NavHostController) {
             }
             composable(AppScreen.Grades.route) {
                 PantallaCalificacion(navController = mainNavController)
+            }
+            composable(AppScreen.Settings.route) {
+                SettingsScreen(navController = mainNavController)
             }
         }
     }

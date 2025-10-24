@@ -6,6 +6,7 @@ sealed class AppScreen(val route: String) {
     object SubjectList : AppScreen("subjects") // Antes era Aprende
     object Test : AppScreen("test")
     object Grades : AppScreen("grades")
+    object Settings : AppScreen("settings")
 
     // Rutas para la navegación de contenido
     object ModuleList : AppScreen("modules/{subjectId}") {
@@ -16,7 +17,6 @@ sealed class AppScreen(val route: String) {
         fun createRoute(moduleId: Int) = "module_detail/$moduleId"
     }
 
-    // --- REEMPLAZA TU OBJECT QUIZ CON ESTE ---
     object Quiz : AppScreen("quiz/{moduleId}?attemptId={attemptId}") {
 
         /**
@@ -32,5 +32,6 @@ sealed class AppScreen(val route: String) {
     object TestReview : AppScreen("test_review/{attemptId}") {
         fun createRoute(attemptId: Long) = "test_review/$attemptId"
     }
+    object BackupRestore : AppScreen("backup_restore")
 }
 
