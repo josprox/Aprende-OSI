@@ -139,7 +139,7 @@ class StudyRepository @Inject constructor(
      * Parsea un string JSON, valida la estructura e importa la nueva materia
      * a la base de datos de forma transaccional.
      */
-    @Transaction // <-- Esto asegura que si algo falla, no se guarde nada (todo o nada)
+    @Transaction // <-- Esto asegura que si algo falla, no se guarde nada (full o nada)
     suspend fun importSubjectFromJson(jsonString: String) {
         // 1. Parsear el JSON a nuestras clases DTO
         val subjectImport = Json.decodeFromString<SubjectImport>(jsonString)
@@ -148,7 +148,9 @@ class StudyRepository @Inject constructor(
         val newSubjectId = studyDao.insertSubject(
             SubjectEntity(
                 id = 0, // Room generará el ID
-                name = subjectImport.name
+                name = subjectImport.name,
+                author = subjectImport.author, // <-- AÑADIDO
+                version = subjectImport.version // <-- AÑADIDO
             )
         )
 
@@ -183,5 +185,161 @@ class StudyRepository @Inject constructor(
     suspend fun deleteSubject(subjectId: Int) {
         studyDao.deleteSubjectById(subjectId)
     }
-}
 
+    // --- ¡NUEVA FUNCIÓN DE ACTUALIZACIÓN! ---
+
+    /**
+     * Actualiza una materia existente desde un JSON, preservando el progreso.
+     * Compara el nuevo JSON con los datos existentes en la BD.
+     *
+     * - Si un módulo o submódulo existe (por título), actualiza su contenido.
+     * - Si un módulo o submódulo es nuevo en el JSON, lo inserta.
+     * - Si un módulo o submódulo existe en la BD pero no en el JSON, lo borra.
+     * - Si el contenido de un módulo cambia, borra sus preguntas y
+     * exámenes PENDIENTES para forzar la regeneración.
+     * - Los exámenes COMPLETADOS se conservan.
+     *
+     * @param subjectId El ID de la materia (SubjectEntity) que se va a actualizar.
+     * @param jsonString El nuevo contenido del curso en formato JSON.
+     */
+    @Transaction
+    suspend fun updateSubjectFromJson(subjectId: Int, jsonString: String) {
+        // 1. Parsear el JSON
+        val subjectImport = Json.decodeFromString<SubjectImport>(jsonString)
+
+        // 2. Actualizar la entidad Subject principal
+        // Creamos una nueva entidad con el ID existente y los datos nuevos
+        studyDao.updateSubject(
+            SubjectEntity(
+                id = subjectId,
+                name = subjectImport.name,
+                author = subjectImport.author, // <-- AÑADIDO
+                version = subjectImport.version // <-- AÑADIDO
+            )
+        )
+
+        // 3. Obtener listas de módulos (los nuevos del JSON y los viejos de la BD)
+        val newModules = subjectImport.modules
+        val oldModules = studyDao.getModulesForSubject(subjectId).first()
+
+        // 4. Crear "Mapas" para compararlos fácilmente por su título
+        val newModulesMap = newModules.associateBy { it.title }
+        val oldModulesMap = oldModules.associateBy { it.title }
+
+        // --- INICIO DEL "MERGE" DE MÓDULOS ---
+
+        // 5. Recorrer los MÓDULOS NUEVOS (del JSON) para Insertar o Actualizar
+        for (newModule in newModules) {
+            val oldModule = oldModulesMap[newModule.title]
+
+            if (oldModule == null) {
+                // --- CASO A: MÓDULO NUEVO (Insertar) ---
+                Log.d("RepoUpdate", "Insertando nuevo módulo: ${newModule.title}")
+
+                // Inserta el módulo y obtiene su nuevo ID
+                val newModuleId = studyDao.insertModule(
+                    ModuleEntity(
+                        id = 0, // Room generará el ID
+                        subjectId = subjectId,
+                        title = newModule.title,
+                        shortDescription = newModule.shortDescription
+                    )
+                )
+
+                // Inserta todos sus submódulos
+                val newSubmodules = newModule.submodules.map { subImport ->
+                    SubmoduleEntity(
+                        id = 0,
+                        moduleId = newModuleId.toInt(),
+                        title = subImport.title,
+                        contentMd = subImport.contentMd
+                    )
+                }
+                studyDao.insertSubmodules(newSubmodules)
+
+            } else {
+                // --- CASO B: MÓDULO EXISTENTE (Actualizar) ---
+                Log.d("RepoUpdate", "Actualizando módulo existente: ${newModule.title}")
+                val moduleId = oldModule.id
+
+                // Actualiza la descripción corta del módulo
+                studyDao.updateModule(oldModule.copy(shortDescription = newModule.shortDescription))
+
+                // Ahora, debemos hacer el mismo "merge" con los SUBMÓDULOS
+                var contentChanged = false // Bandera para saber si borramos las preguntas
+
+                val newSubmodules = newModule.submodules
+                val oldSubmodules = studyDao.getSubmodulesForModule(moduleId).first()
+                val newSubmodulesMap = newSubmodules.associateBy { it.title }
+                val oldSubmodulesMap = oldSubmodules.associateBy { it.title }
+
+                // B.1: Recorrer submódulos nuevos (Insertar/Actualizar)
+                for (newSub in newSubmodules) {
+                    val oldSub = oldSubmodulesMap[newSub.title]
+
+                    if (oldSub == null) {
+                        // Submódulo nuevo, insertarlo
+                        Log.d("RepoUpdate", " -> Insertando submódulo: ${newSub.title}")
+                        studyDao.insertSubmodule(
+                            SubmoduleEntity(
+                                id = 0,
+                                moduleId = moduleId,
+                                title = newSub.title,
+                                contentMd = newSub.contentMd
+                            )
+                        )
+                        contentChanged = true
+                    } else {
+                        // Submódulo existente, comparar contenido
+                        if (oldSub.contentMd != newSub.contentMd) {
+                            Log.d("RepoUpdate", " -> Actualizando submódulo: ${newSub.title}")
+                            studyDao.updateSubmodule(oldSub.copy(contentMd = newSub.contentMd))
+                            contentChanged = true
+                        }
+                    }
+                }
+
+                // B.2: Recorrer submódulos viejos (Borrar)
+                for (oldSub in oldSubmodules) {
+                    if (!newSubmodulesMap.containsKey(oldSub.title)) {
+                        // Este submódulo fue eliminado en el JSON
+                        Log.d("RepoUpdate", " -> Borrando submódulo: ${oldSub.title}")
+                        studyDao.deleteSubmoduleById(oldSub.id)
+                        contentChanged = true
+                    }
+                }
+
+                // B.3: Limpiar preguntas si el contenido cambió
+                if (contentChanged) {
+                    Log.i(
+                        "RepoUpdate",
+                        "El contenido del módulo ${oldModule.title} cambió. " +
+                                "Borrando preguntas viejas e intentos PENDIENTES."
+                    )
+                    // Borra preguntas viejas (se regenerarán la próxima vez)
+                    studyDao.deleteQuestionsForModule(moduleId)
+
+                    // Borra intentos PENDIENTES (preserva los COMPLETADOS)
+                    studyDao.deletePendingAttemptsForModule(moduleId)
+                }
+            }
+        }
+
+        // 6. Recorrer los MÓDULOS VIEJOS (de la BD) para Borrar los que ya no existen
+        for (oldModule in oldModules) {
+            if (!newModulesMap.containsKey(oldModule.title)) {
+                // --- CASO C: MÓDULO ELIMINADO (Borrar) ---
+                // Este módulo estaba en la BD pero ya no viene en el JSON
+                Log.w("RepoUpdate", "Borrando módulo obsoleto: ${oldModule.title}")
+
+                // Al borrar el módulo, 'onDelete = CASCADE' se encargará
+                // de borrar todos sus submódulos, preguntas, e intentos
+                // (tanto pendientes como completados). Esto es correcto,
+                // ya que el módulo ya no existe.
+                studyDao.deleteModuleById(oldModule.id)
+            }
+        }
+
+        Log.i("RepoUpdate", "¡Actualización de materia (ID: $subjectId) completada!")
+    }
+}

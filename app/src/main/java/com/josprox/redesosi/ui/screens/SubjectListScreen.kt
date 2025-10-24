@@ -6,6 +6,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,13 +45,16 @@ fun SubjectListScreen(
 ) {
     val subjects by viewModel.subjects.collectAsState(initial = emptyList())
 
-    val subjectToDelete by viewModel.subjectToDelete.collectAsState()
+    // --- Ahora tenemos dos estados de diálogo ---
+    val selectedSubject by viewModel.selectedSubject.collectAsState()
+    val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri ->
             if (uri != null) {
-                viewModel.importMateria(uri)
+                // --- Llamamos a la nueva función central ---
+                viewModel.processFile(uri)
             }
         }
     )
@@ -62,7 +66,10 @@ fun SubjectListScreen(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = {
+                    // --- Preparamos al VM para un IMPORT ---
+                    viewModel.prepareForFileAction(SubjectViewModel.FileAction.IMPORT)
                     filePickerLauncher.launch(arrayOf("application/json"))
+                    
                 },
                 icon = { Icon(Icons.Default.FileUpload, contentDescription = "Añadir materia") },
                 text = { Text("Añadir Materia") }
@@ -71,11 +78,62 @@ fun SubjectListScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
 
-            subjectToDelete?.let { subject ->
+            // --- Diálogo de Opciones (se muestra primero) ---
+            selectedSubject?.let { subject ->
+                if (!showDeleteDialog) { // Solo muestra este si NO estamos confirmando el borrado
+                    AlertDialog(
+                        onDismissRequest = { viewModel.onDismissOptionsDialog() },
+                        title = { Text(subject.name) },
+                        text = {
+                            Column {
+                                Text("¿Qué deseas hacer con esta materia?")
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { viewModel.onDismissOptionsDialog() }) {
+                                Text("Cancelar")
+                            }
+                        },
+                        dismissButton = {
+                            Column {
+                                // Botón para Actualizar
+                                TextButton(
+                                    onClick = {
+                                        // 1. Prepara al VM para un UPDATE
+                                        viewModel.prepareForFileAction(SubjectViewModel.FileAction.UPDATE)
+                                        // 2. Lanza el picker
+                                        filePickerLauncher.launch(arrayOf("application/json"))
+                                        // 3. Cierra el diálogo de opciones
+                                        viewModel.onDismissOptionsDialog()
+                                    }
+                                ) {
+                                    Text("Actualizar desde JSON")
+                                }
+
+                                // Botón para Eliminar (que abre el otro diálogo)
+                                TextButton(
+                                    onClick = {
+                                        // 1. Cierra este diálogo
+                                        viewModel.onDismissOptionsDialog()
+                                        // 2. Pide al VM que abra el diálogo de confirmación
+                                        viewModel.onDeleteClicked()
+                                    }
+                                ) {
+                                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+
+            // --- Diálogo de Confirmación de Borrado ---
+            // Ahora se controla por 'showDeleteDialog'
+            if (showDeleteDialog) {
                 AlertDialog(
                     onDismissRequest = { viewModel.onDismissDeleteDialog() },
                     title = { Text("¿Eliminar Materia?") },
-                    text = { Text("¿Estás seguro de que quieres eliminar \"${subject.name}\"? Esta acción es permanente y borrará todos sus módulos y tu historial de exámenes.") },
+                    text = { Text("¿Estás seguro de que quieres eliminar \"${selectedSubject?.name ?: ""}\"? Esta acción es permanente y borrará todos sus módulos y tu historial de exámenes.") },
                     confirmButton = {
                         Button(
                             onClick = { viewModel.onConfirmDelete() },
@@ -91,6 +149,7 @@ fun SubjectListScreen(
                     }
                 )
             }
+            
 
             LazyColumn(
                 modifier = Modifier
@@ -105,21 +164,26 @@ fun SubjectListScreen(
                             .fillMaxWidth()
                             .combinedClickable(
                                 onClick = {
-                                    // Click normal: navega
                                     navController.navigate(AppScreen.ModuleList.createRoute(subject.id))
                                 },
                                 onLongClick = {
-                                    // Click largo: muestra diálogo de borrado
                                     viewModel.onSubjectLongPress(subject)
                                 }
                             ),
                         shape = MaterialTheme.shapes.medium
                     ) {
-                        Text(
-                            text = subject.name,
-                            style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(16.dp)
-                        )
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = subject.name,
+                                style = MaterialTheme.typography.titleLarge,
+                            )
+                            // Mostramos autor y versión
+                            Text(
+                                text = "Autor: ${subject.author} - v${subject.version}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }

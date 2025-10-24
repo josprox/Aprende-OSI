@@ -24,5 +24,7 @@ data class ModuleImport(
 @Serializable
 data class SubjectImport(
     val name: String,
+    val author: String,
+    val version: String,
     val modules: List<ModuleImport>
 )

@@ -8,7 +8,9 @@ import androidx.room.Index // Importamos Index para definir los índices
 @Entity(tableName = "subjects")
 data class SubjectEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val name: String
+    val name: String,
+    val author: String,
+    val version: String
 )
 
 @Entity(

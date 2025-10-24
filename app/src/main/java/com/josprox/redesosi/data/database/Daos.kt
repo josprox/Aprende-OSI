@@ -129,14 +129,14 @@ interface StudyDao {
     /**
      * Obtiene un intento de examen específico por su ID.
      */
-    @Query("SELECT * FROM test_attempts WHERE id = :attemptId LIMIT 1") // <-- AÑADE ESTA FUNCIÓN
+    @Query("SELECT * FROM test_attempts WHERE id = :attemptId LIMIT 1")
     suspend fun getTestAttemptById(attemptId: Long): TestAttemptEntity?
 
     /**
      * Obtiene las preguntas de un módulo en su orden original (por ID).
      * Esto es crucial para que el 'currentQuestionIndex' siempre coincida.
      */
-    @Query("SELECT * FROM questions WHERE moduleId = :moduleId ORDER BY id ASC") // <-- AÑADE ESTA FUNCIÓN
+    @Query("SELECT * FROM questions WHERE moduleId = :moduleId ORDER BY id ASC")
     suspend fun getOriginalQuestionsForModule(moduleId: Int): List<QuestionEntity>
 
     /**
@@ -177,4 +177,48 @@ interface StudyDao {
      */
     @Query("DELETE FROM subjects WHERE id = :subjectId")
     suspend fun deleteSubjectById(subjectId: Int)
+
+    // --- FUNCIONES AÑADIDAS PARA LA ACTUALIZACIÓN ---
+
+    /**
+     * Actualiza una materia existente (ej. para cambiar su nombre, autor o versión).
+     */
+    @Update
+    suspend fun updateSubject(subject: SubjectEntity)
+
+    /**
+     * Actualiza un módulo existente (ej. para cambiar su descripción).
+     */
+    @Update
+    suspend fun updateModule(module: ModuleEntity)
+
+    /**
+     * Actualiza un submódulo existente (ej. para cambiar su contenido).
+     */
+    @Update
+    suspend fun updateSubmodule(submodule: SubmoduleEntity)
+
+
+    /**
+     * Borra un módulo específico por su ID.
+     * Gracias a 'onDelete = CASCADE', esto borrará sus submódulos,
+     * preguntas e intentos (progreso) asociados.
+     * Usar con cuidado.
+     */
+    @Query("DELETE FROM modules WHERE id = :moduleId")
+    suspend fun deleteModuleById(moduleId: Int)
+
+    /**
+     * Borra un submódulo específico por su ID.
+     */
+    @Query("DELETE FROM submodules WHERE id = :submoduleId")
+    suspend fun deleteSubmoduleById(submoduleId: Int)
+
+    /**
+     * Borra SOLO los intentos PENDIENTES de un módulo.
+     * Esto preserva el historial de exámenes completados,
+     * pero elimina los exámenes a medias que ahora son inválidos.
+     */
+    @Query("DELETE FROM test_attempts WHERE moduleId = :moduleId AND status = 'PENDING'")
+    suspend fun deletePendingAttemptsForModule(moduleId: Int)
 }
