@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.josprox.redesosi.ui.screens.*
 import com.josprox.redesosi.ui.screens.settings.BackupRestoreScreen
+import com.josprox.redesosi.ui.screens.settings.LegalInfoScreen
 
 @Composable
 fun AppNavGraph(
@@ -70,6 +71,9 @@ fun AppNavGraph(
         }
         composable(route = AppScreen.BackupRestore.route) {
             BackupRestoreScreen(navController = navController)
+        }
+        composable(route = AppScreen.LegalInfo.route) {
+            LegalInfoScreen(navController = navController)
         }
     }
 }

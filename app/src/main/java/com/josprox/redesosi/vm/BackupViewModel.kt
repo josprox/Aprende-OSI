@@ -2,6 +2,7 @@ package com.josprox.redesosi.vm
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import kotlin.system.exitProcess
 
 // Estado de la UI para mostrar mensajes (cargando, éxito, error)
 data class BackupUiState(
@@ -37,7 +39,7 @@ class BackupViewModel(
 
     fun createBackup(context: Context, targetUri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
-            _uiState.update { it.copy(isLoading = true, message = "Creando backup...", isError = false) }
+            _uiState.update { it.copy(isLoading = true, message = "Creando copia de seguridad...", isError = false) }
             try {
                 // 1. ¡CRÍTICO! Cerrar la BD antes de copiarla.
                 db.close()
@@ -53,11 +55,11 @@ class BackupViewModel(
                         inputStream.copyTo(outputStream)
                     }
                 }
-                _uiState.update { it.copy(isLoading = false, message = "Backup creado con éxito", isError = false) }
+                _uiState.update { it.copy(isLoading = false, message = "Copia de seguridad creada con éxito.", isError = false) }
 
             } catch (e: Exception) {
                 e.printStackTrace()
-                _uiState.update { it.copy(isLoading = false, message = "Error al crear backup: ${e.message}", isError = true) }
+                _uiState.update { it.copy(isLoading = false, message = "Error al crear copia de seguridad: ${e.message}", isError = true) }
             }
             // 5. La BD se reabrirá automáticamente en la próxima llamada a getDatabase()
         }
@@ -65,7 +67,7 @@ class BackupViewModel(
 
     fun restoreBackup(context: Context, sourceUri: Uri) {
         viewModelScope.launch(Dispatchers.IO) {
-            _uiState.update { it.copy(isLoading = true, message = "Restaurando...", isError = false) }
+            _uiState.update { it.copy(isLoading = true, message = "Restaurando datos...", isError = false) }
             try {
                 // 1. Obtener la ruta del archivo de la BD interna
                 val dbFile = context.getDatabasePath(DATABASE_NAME)
@@ -82,15 +84,33 @@ class BackupViewModel(
                     }
                 }
 
-                // 5. Mostrar mensaje de éxito y pedir reinicio.
-                _uiState.update { it.copy(isLoading = false, message = "Restauración completa. Reinicia la app.", isError = false) }
+                val successMessage = "¡Datos restaurados con éxito! Reiniciando la aplicación..."
+                _uiState.update { it.copy(isLoading = false, message = successMessage, isError = false) }
 
+                // Mostrar Toast y luego reiniciar
                 launch(Dispatchers.Main) {
-                    Toast.makeText(context, "Restauración completa. Por favor, reinicia la app.", Toast.LENGTH_LONG).show()
-                }
+                    Toast.makeText(context, successMessage, Toast.LENGTH_LONG).show()
 
-                // NOTA: Una restauración de BD requiere que la app se reinicie
-                // para recargar todos los datos y conexiones.
+                    // --- LÓGICA DE REINICIO AUTOMÁTICO ---
+
+                    // 1. Crear el intent para relanzar la actividad principal de la app
+                    val packageManager = context.packageManager
+                    val intent = packageManager.getLaunchIntentForPackage(context.packageName)
+
+                    // Asegurar que el intent no sea nulo antes de lanzarlo
+                    intent?.let {
+                        val componentName = it.component
+                        val mainIntent = Intent.makeRestartActivityTask(componentName)
+                        context.startActivity(mainIntent)
+
+                        // 2. Terminar el proceso actual
+                        exitProcess(0)
+                    } ?: run {
+                        // Caso de fallback si no se encuentra el intent
+                        Toast.makeText(context, "Error al intentar reiniciar. Por favor, reinicia manualmente.", Toast.LENGTH_LONG).show()
+                    }
+                    // ------------------------------------
+                }
 
             } catch (e: Exception) {
                 e.printStackTrace()

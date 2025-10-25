@@ -33,5 +33,7 @@ sealed class AppScreen(val route: String) {
         fun createRoute(attemptId: Long) = "test_review/$attemptId"
     }
     object BackupRestore : AppScreen("backup_restore")
+
+    object LegalInfo : AppScreen("legal_info")
 }
 
