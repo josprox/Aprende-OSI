@@ -100,14 +100,12 @@ fun SubjectListScreen(
                                     onClick = {
                                         viewModel.prepareForFileAction(SubjectViewModel.FileAction.UPDATE)
                                         filePickerLauncher.launch(arrayOf("application/json"))
-                                        viewModel.onDismissOptionsDialog()
                                     }
                                 ) {
                                     Text("Actualizar desde JSON")
                                 }
                                 TextButton(
                                     onClick = {
-                                        viewModel.onDismissOptionsDialog()
                                         viewModel.onDeleteClicked()
                                     }
                                 ) {
