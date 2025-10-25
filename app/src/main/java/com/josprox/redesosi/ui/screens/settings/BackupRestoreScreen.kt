@@ -121,8 +121,7 @@ fun BackupRestoreScreen(
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Button(onClick = {
-                    // Nombre de archivo sugerido
-                    backupLauncher.launch("backup_redesosi.db")
+                    backupLauncher.launch("backup_AprendeMas.db")
                 }) {
                     Text("Crear Backup (Exportar)")
                 }
