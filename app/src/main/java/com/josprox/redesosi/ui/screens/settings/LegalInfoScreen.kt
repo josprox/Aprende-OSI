@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -17,13 +18,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LegalInfoScreen(navController: NavHostController) {
+    val uriHandler = LocalUriHandler.current // Herramienta para abrir enlaces externos
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -59,7 +66,32 @@ fun LegalInfoScreen(navController: NavHostController) {
                 )
             }
 
-            // --- Sección 2: Política de Privacidad ---
+            // --- Sección 2: Licencia y Código Fuente ---
+            LegalSection(title = "Licencia de Código Fuente (Source-Available)") {
+                Text(
+                    text = "El código fuente de esta aplicación está disponible para su consulta y auditoría pública. Sin embargo, este software NO es de código abierto (Open Source).",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Derechos del Usuario:",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Usted tiene derecho a **consultar** y **aportar** (mediante pull requests o reportes) al código fuente.\n\n" +
+                            "Restricciones:",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "Está **estrictamente prohibido modificar, distribuir, republicar, sublicenciar o utilizar el código para fines comerciales o derivados** sin el permiso explícito y escrito del desarrollador.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            // --- Sección 3: Política de Privacidad ---
             LegalSection(title = "Política de Privacidad") {
                 Text(
                     text = "Esta aplicación está diseñada para ser privada y no recopila información personal identificable. Los datos (materias, notas) se almacenan localmente en su dispositivo y nunca se transmiten a servidores externos sin su consentimiento explícito (como al crear un backup local).",
@@ -67,13 +99,65 @@ fun LegalInfoScreen(navController: NavHostController) {
                 )
             }
 
-            // --- Sección 3: Licencias de Código Abierto ---
-            LegalSection(title = "Licencias de Código Abierto") {
+            // --- Sección 4: Componentes de Terceros ---
+            LegalSection(title = "Componentes de Terceros (Código Abierto)") {
                 Text(
-                    text = "Esta aplicación utiliza bibliotecas de terceros bajo licencias de código abierto, incluyendo AndroidX, Jetpack Compose y Kotlin. La lista completa de licencias está disponible previa solicitud. Se respetan todas las obligaciones de licencia.",
+                    text = "Esta aplicación utiliza bibliotecas de terceros que sí están licenciadas bajo licencias de Código Abierto (Open Source), incluyendo AndroidX, Jetpack Compose y Kotlin. Se respetan todas las obligaciones de licencia de estos componentes.",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
+
+            // --- Sección 5: Soporte y Contacto (NUEVA) ---
+            LegalSection(title = "Soporte y Autoría") {
+                Text(
+                    text = "Aplicación creada por:",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = "Melchor Estrada José Luis - JOSPROX MX",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Para soporte, reportes de errores, dudas o cualquier otra consulta, por favor utilice el siguiente enlace:",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Enlace Clickable
+                val annotatedLinkString = buildAnnotatedString {
+                    append("Enlace de Soporte: ")
+                    pushStringAnnotation(tag = "URL", annotation = "https://josprox.com/soporte/")
+                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)) {
+                        append("josprox.com/soporte/")
+                    }
+                    pop()
+                }
+
+                ClickableText(
+                    text = annotatedLinkString,
+                    onClick = { offset ->
+                        annotatedLinkString.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                            .firstOrNull()?.let { annotation ->
+                                uriHandler.openUri(annotation.item)
+                            }
+                    },
+                    style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Pie de página (ejemplo)
+            Text(
+                "JOSPROX MX",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
         }
     }
 }
