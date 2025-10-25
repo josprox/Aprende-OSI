@@ -1,59 +1,82 @@
-# App de Estudio Modular (RedesOSI)
+# 🎓 Aprende +: Estudio Modular con Tests Generados por IA (JOSPROX MX)
 
-Una aplicación de estudio nativa de Android, construida 100% con Kotlin y Jetpack Compose. Está diseñada para permitir a los usuarios aprender cualquier tema a través de una estructura modular de **Materias -> Módulos -> Submódulos**.
+> **Eslogan:** La forma más inteligente de aprender cualquier tema. Estructura tu conocimiento, genera exámenes únicos y gestiona tu contenido de estudio.
 
-La característica principal de la app es su capacidad de **generar exámenes únicos usando IA (Groq)** y permitir a los usuarios **importar y gestionar su propio contenido** de estudio a través de archivos JSON.
+Una aplicación de estudio nativa de Android diseñada para optimizar el aprendizaje de cualquier tema a través de una jerarquía de contenido clara: **Materias → Módulos → Submódulos**. Construida al 100% con **Kotlin** y la modernidad de **Jetpack Compose (Material 3)**.
 
-## ✨ Características Principales
+---
 
-* **Sistema de Estudio Modular:** Aprende a través de una jerarquía clara:
-    * **Materias**: El tema general (ej. "Redes de Computadoras", "Historia Universal").
-    * **Módulos**: Secciones principales del tema (ej. "Modelo OSI", "Revolución Francesa").
-    * **Submódulos**: El contenido de estudio detallado, escrito en Markdown.
+## ✨ Características Estelares
 
-* **Exámenes Generados por IA:** Los exámenes para cada módulo son creados dinámicamente usando la **API de GroqCloud**. Esto asegura que cada test sea diferente.
+### 🧠 Aprendizaje Dinámico y Modular
 
-* **Gestión Avanzada de Exámenes:**
-    * **Resumir Exámenes:** Si dejas un examen a medias, puedes volver al menú "Test" y continuar exactamente donde te quedaste.
-    * **Revisar Exámenes:** Una vez completado, puedes ir a la sección "Calificación" o "Test" para revisar cada pregunta, ver tu respuesta y cuál era la correcta.
+El diseño se basa en un flujo de estudio intuitivo:
 
-* **Gestión de Contenido (UGC):**
-    * **Importar Materias:** Añade tu propio contenido de estudio a la app usando un archivo `.json` con un formato predefinido.
-    * **Eliminar Materias:** Borra materias (y todo su contenido asociado) con una simple pulsación larga en la pantalla principal.
+1.  **Materias (Ej. "Redes de Computadoras")**
+2.  **Módulos (Ej. "Modelo OSI")**
+3.  **Submódulos (Contenido en Markdown)**
 
-* **Regeneración de Exámenes:** ¿Quieres volver a probar un módulo con preguntas nuevas? Puedes optar por borrar tu historial y generar un set de preguntas completamente nuevo desde la pantalla de detalle del módulo.
+Esto permite una organización del conocimiento escalable, ideal para temas técnicos o académicos. 
 
-## 🛠️ Stack Tecnológico
+### 🤖 Generación de Exámenes con IA
 
-* **UI:** Jetpack Compose (Material 3).
-* **Lenguaje:** 100% Kotlin.
-* **Asincronía:** Coroutines y Flows.
-* **Arquitectura:** MVVM (Model-View-ViewModel).
-* **Inyección de Dependencias:** Hilt (Dagger-Hilt).
-* **Base de Datos:** Room (para persistencia local).
-* **Navegación:** Navigation Compose.
-* **Parseo de JSON:** `kotlinx.serialization`.
-* **Renderizado de Markdown:** [compose-richtext (Markdown)](https://github.com/halilozercan/compose-richtext).
-* **IA (Generación de Tests):** GroqCloud API.
+* **Tests Únicos:** Cada examen para un módulo es generado dinámicamente utilizando la **API de GroqCloud**, asegurando que el estudiante nunca repita las mismas preguntas.
+* **Gestión de Exámenes:** Permite **continuar** un test incompleto y ofrece una revisión detallada de la **calificación** para ver la pregunta, tu respuesta y la solución correcta.
+* **Reintentar:** Opción para borrar el historial de un módulo y generar un set de preguntas completamente nuevo.
 
-## 🚀 Instalación y Configuración
+### 📚 Gestión de Contenido Personalizado (UGC)
 
-1.  Clona el repositorio:
+* **Importación Sencilla:** Los usuarios pueden añadir sus propias materias de estudio a la aplicación importando un simple archivo **JSON** con el formato predefinido (ver sección `Formato de Importación`).
+* **Control Total:** Administra tu biblioteca con facilidad, incluyendo la eliminación rápida de materias no deseadas.
+
+---
+
+## 🛠️ Stack Tecnológico (Modernidad y Rendimiento)
+
+El proyecto está construido bajo una arquitectura moderna para garantizar alto rendimiento y mantenibilidad:
+
+| Categoría | Tecnología | Propósito |
+| :--- | :--- | :--- |
+| **Frontend/UI** | **Jetpack Compose (Material 3)** | Interfaz de usuario moderna y declarativa. |
+| **Lenguaje** | **100% Kotlin** | Lenguaje primario. |
+| **Arquitectura** | **MVVM** | Separación limpia de la lógica de negocio y la UI. |
+| **Persistencia** | **Room** | Base de datos local para almacenar el contenido de estudio y el progreso. |
+| **Asincronía** | **Coroutines y Flows** | Manejo de tareas en segundo plano y flujos de datos reactivos. |
+| **Inyección** | **Hilt (Dagger-Hilt)** | Gestión robusta de dependencias. |
+| **IA/Network** | **GroqCloud API** | Generación dinámica de preguntas para los exámenes. |
+| **Utilidades** | `kotlinx.serialization` | Parseo eficiente del formato JSON. |
+| **Renderizado** | `compose-richtext` | Visualización del contenido de estudio escrito en **Markdown**. |
+
+---
+
+## 🚀 Instalación y Configuración del Entorno
+
+Sigue estos pasos para poner la aplicación en funcionamiento:
+
+1.  **Clonar el Repositorio:**
     ```bash
-    git clone https://github.com/josprox/Aprende-OSI
+    git clone https://github.com/josprox/Aprende-mas
     ```
-2.  Abre el proyecto en Android Studio.
-3.  **Configurar la API Key (¡Importante!)**
-    * Necesitarás una clave de API gratuita de [GroqCloud](https://console.groq.com/keys).
-    * Ve al archivo `data/network/GroqApiService.kt`.
-    * Busca la variable `API_KEY` y reemplaza `"TU_API_KEY_AQUI"` con tu clave real.
-4.  Construye y ejecuta la aplicación.
+2.  **Abrir Proyecto:** Abre la carpeta clonada en **Android Studio (versión 2023.2 o superior)**.
 
-## 📄 Formato de Importación JSON
+3.  **Configurar la API Key (¡CRÍTICO!):**
+    * Obtén tu clave de API gratuita en el portal de [GroqCloud](https://console.groq.com/keys).
+    * Navega al archivo `data/network/GroqApiService.kt`.
+    * **Reemplaza** la variable `API_KEY` con tu clave personal:
+        ```kotlin
+        // Reemplaza "TU_API_KEY_AQUI"
+        private const val API_KEY = "TU_API_KEY_AQUI" 
+        ```
 
-Para usar la función "Añadir Materia", necesitas crear un archivo `.json` con la siguiente estructura. La app parseará este archivo y lo guardará en la base de datos local.
+4.  **Ejecutar:** Sincroniza Gradle, construye y ejecuta el proyecto en un emulador o dispositivo físico.
 
-**Ejemplo (`mi_materia.json`):**
+---
+
+## 📄 Formato de Importación JSON (UGC Schema)
+
+Para añadir tu propio contenido de estudio (función "Añadir Materia"), utiliza estrictamente el siguiente esquema de archivo `.json`. Este archivo será parseado y persistido localmente.
+
+**Estructura Requerida (`mi_materia.json`):**
 
 ```json
 {
@@ -72,22 +95,21 @@ Para usar la función "Añadir Materia", necesitas crear un archivo `.json` con 
           "contentMd": "### ¿Qué es?\nEl cifrado asimétrico usa una clave pública y una privada..."
         }
       ]
-    },
-    {
-      "title": "Malware",
-      "shortDescription": "Tipos de software malicioso.",
-      "submodules": [
-        {
-          "title": "Virus y Gusanos",
-          "contentMd": "Un virus se adjunta a un programa, un gusano se replica por la red..."
-        }
-      ]
     }
   ]
 }
-```
+````
 
+-----
 
-## 📄 Licencia
+## 📜 Licencia y Contacto
 
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+Este proyecto está bajo una **Licencia de Código Fuente Consultable y Contribución Restringida (LCSCR)**.
+
+* El código fuente está disponible para **consulta y aportación** (contribuciones).
+* **Prohibida** la modificación, redistribución, republicación o uso comercial del código principal.
+
+**Desarrollado por:** Melchor Estrada José Luis - JOSPROX MX
+
+**Soporte Oficial y Consultas de Licencia:**
+[https://josprox.com/soporte/](https://josprox.com/soporte/)
