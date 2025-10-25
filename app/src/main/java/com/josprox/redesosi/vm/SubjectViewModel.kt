@@ -14,21 +14,15 @@ import kotlinx.serialization.SerializationException
 import com.josprox.redesosi.data.database.SubjectEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-
-// --- ELIMINAMOS FileAction DE AQUÍ ---
-
 @HiltViewModel
 class SubjectViewModel @Inject constructor(
     private val repository: StudyRepository,
-    private val application: Application // Hilt inyectará el contexto
+    private val application: Application
 ) : ViewModel() {
-
-    // --- AÑADIDO: FileAction AHORA ESTÁ DENTRO DE LA CLASE ---
     enum class FileAction {
         IMPORT, // Añadir nueva materia
         UPDATE  // Actualizar materia existente
     }
-    // --- FIN MOVIMIENTO ---
 
     val subjects = repository.getAllSubjects()
 

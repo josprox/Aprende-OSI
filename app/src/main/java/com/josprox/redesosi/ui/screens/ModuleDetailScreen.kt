@@ -1,6 +1,5 @@
 package com.josprox.redesosi.ui.screens
 
-// import com.josprox.redesosi.ui.theme.RedesOSITheme // <-- ELIMINADO (ya no se usa aquí)
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,9 +22,6 @@ import com.halilibo.richtext.ui.material3.RichText
 import com.josprox.redesosi.navigation.AppScreen
 import com.josprox.redesosi.vm.ModuleDetailViewModel
 
-//=================================================================
-// 2. SCREEN COMPOSABLE
-//=================================================================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModuleDetailScreen(
@@ -36,7 +32,7 @@ fun ModuleDetailScreen(
     val submodules by viewModel.submodules.collectAsState(initial = emptyList())
     val showDialog by viewModel.showConfirmDialog.collectAsState()
 
-    // --- MODIFICADO: Obtenemos el título real desde el ViewModel ---
+    // --- Obtenemos el título real desde el ViewModel ---
     val title by viewModel.moduleTitle.collectAsState()
 
     // --- Comportamiento de scroll para la TopAppBar ---
@@ -52,8 +48,6 @@ fun ModuleDetailScreen(
                 title = {
                     Text(
                         text = title, // <-- Título dinámico
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
                     )
                 },
                 navigationIcon = {
@@ -125,7 +119,6 @@ fun ModuleDetailScreen(
                     Text(submodule.title, style = MaterialTheme.typography.headlineSmall)
                     Spacer(Modifier.height(8.dp))
 
-                    // --- AÑADIDO: Contenedor para seleccionar texto ---
                     SelectionContainer {
                         RichText(
                             modifier = Modifier.fillMaxWidth(),
@@ -135,8 +128,6 @@ fun ModuleDetailScreen(
                             )
                         }
                     }
-
-                    // --- ELIMINADO: HorizontalDivider ---
                 }
             }
         }
