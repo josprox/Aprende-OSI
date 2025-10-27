@@ -2,6 +2,7 @@ package com.josprox.redesosi.ui.screens
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row // Importar Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +14,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.QuestionAnswer // Importar QuestionAnswer
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -51,22 +53,18 @@ fun ModuleDetailScreen(
     val submodules by viewModel.submodules.collectAsState(initial = emptyList())
     val showDialog by viewModel.showConfirmDialog.collectAsState()
 
-    // --- Obtenemos el título real desde el ViewModel ---
     val title by viewModel.moduleTitle.collectAsState()
 
-    // --- Comportamiento de scroll para la TopAppBar ---
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
 
     Scaffold(
-        // --- Modificador para conectar el scroll ---
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            // ---  Usamos MediumTopAppBar ---
             MediumTopAppBar(
                 title = {
                     Text(
-                        text = title, // <-- Título dinámico
+                        text = title,
                     )
                 },
                 navigationIcon = {
@@ -74,7 +72,6 @@ fun ModuleDetailScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver")
                     }
                 },
-                // --- Botón de "Regenerar" en la barra ---
                 actions = {
                     IconButton(onClick = { viewModel.onRegenerateClicked() }) {
                         Icon(
@@ -83,20 +80,30 @@ fun ModuleDetailScreen(
                         )
                     }
                 },
-                // --- Pasamos el comportamiento de scroll ---
                 scrollBehavior = scrollBehavior
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { navController.navigate(AppScreen.Quiz.createRoute(moduleId)) },
-                icon = { Icon(Icons.Default.PlayArrow, contentDescription = "") },
-                text = { Text("Iniciar Test") }
-            )
+            // --- AÑADIDO: Agrupamos los FABs en un Row ---
+            Row(
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+            ) {
+                // 1. Botón para el CHAT
+                ExtendedFloatingActionButton(
+                    onClick = { navController.navigate(AppScreen.Chat.createRoute(moduleId)) }, // ✅ Usar createRoute
+                    icon = { Icon(Icons.Default.QuestionAnswer, contentDescription = "") },
+                    text = { Text("Preguntar IA") }
+                )
+                // 2. Botón para el QUIZ (existente)
+                ExtendedFloatingActionButton(
+                    onClick = { navController.navigate(AppScreen.Quiz.createRoute(moduleId)) },
+                    icon = { Icon(Icons.Default.PlayArrow, contentDescription = "") },
+                    text = { Text("Iniciar Test") }
+                )
+            }
         }
     ) { paddingValues ->
 
-        // --- Diálogo de Confirmación (para Regenerar) ---
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { viewModel.onDialogDismiss() },
@@ -120,20 +127,18 @@ fun ModuleDetailScreen(
             )
         }
 
-        // --- Contenido de la Pantalla ---
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            // Padding horizontal se aplica a cada item para que el scrollbar llegue al borde
-            contentPadding = PaddingValues(bottom = 96.dp) // <-- Espacio para el FAB
+            contentPadding = PaddingValues(bottom = 96.dp)
         ) {
             items(submodules) { submodule ->
                 Column(
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp) // Padding horizontal aquí
-                        .padding(top = 16.dp, bottom = 24.dp) // Espaciado vertical
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 16.dp, bottom = 24.dp)
                 ) {
                     Text(submodule.title, style = MaterialTheme.typography.headlineSmall)
                     Spacer(Modifier.height(8.dp))

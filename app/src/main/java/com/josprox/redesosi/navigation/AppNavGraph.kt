@@ -14,11 +14,11 @@ import com.josprox.redesosi.ui.screens.settings.LegalInfoScreen
 @Composable
 fun AppNavGraph(
     modifier: Modifier = Modifier,
-    navController: NavHostController // Ahora recibe el NavController
+    navController: NavHostController
 ) {
     NavHost(
         navController = navController,
-        startDestination = AppScreen.Home.route, // 1. La app empieza en la pantalla principal con el menú
+        startDestination = AppScreen.Home.route,
         modifier = modifier
     ) {
         // 2. La ruta "home" carga la MainScreen, que contiene el menú inferior
@@ -52,13 +52,10 @@ fun AppNavGraph(
                 }
             )
         ) { backStackEntry ->
-            // El moduleId lo pasamos a la pantalla,
-            // el ViewModel se encargará de leer ambos (moduleId y attemptId)
             val moduleId = backStackEntry.arguments?.getInt("moduleId") ?: 0
             QuizScreen(
                 navController = navController,
                 moduleId = moduleId
-                // No pasamos el attemptId, el ViewModel lo tomará del SavedStateHandle
             )
         }
 
@@ -69,6 +66,15 @@ fun AppNavGraph(
             val attemptId = backStackEntry.arguments?.getLong("attemptId") ?: 0L
             TestReviewScreen(navController = navController, attemptId = attemptId)
         }
+
+        composable(
+            route = AppScreen.Chat.route,
+            arguments = listOf(navArgument("moduleId") { type = NavType.IntType }) // <-- 1. Define el argumento
+        ) { backStackEntry ->
+            val moduleId = backStackEntry.arguments?.getInt("moduleId") ?: 0 // <-- 2. Recupera el argumento
+            ChatScreen(navController = navController, moduleId = moduleId) // <-- 3. Pásalo a la pantalla
+        }
+
         composable(route = AppScreen.BackupRestore.route) {
             BackupRestoreScreen(navController = navController)
         }
@@ -77,4 +83,3 @@ fun AppNavGraph(
         }
     }
 }
-

@@ -35,5 +35,8 @@ sealed class AppScreen(val route: String) {
     object BackupRestore : AppScreen("backup_restore")
 
     object LegalInfo : AppScreen("legal_info")
+    object Chat : AppScreen("chat_screen/{moduleId}") { // 1. Define el argumento en la ruta base
+        fun createRoute(moduleId: Int) = "chat_screen/$moduleId" // 2. Crea la función constructora
+    }
 }
 
