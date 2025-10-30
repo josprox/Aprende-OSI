@@ -28,12 +28,12 @@ fun QuizScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // --- Cálculo del progreso (CORREGIDO) ---
+    // --- Cálculo del progreso ---
     val progress = if (uiState.questions.isNotEmpty()
         && !uiState.isQuizFinished) {
-        (uiState.currentQuestionIndex.toFloat() + 1f) // Se añade 1f para mostrar el progreso de la pregunta actual
-            .coerceAtMost(uiState.questions.size.toFloat()) // Asegura que no pase de 1f
-        uiState.questions.size.toFloat() // <--- OPERADOR DE DIVISIÓN AÑADIDO
+        (uiState.currentQuestionIndex.toFloat() + 1f)
+            .coerceAtMost(uiState.questions.size.toFloat())
+        uiState.questions.size.toFloat()
     } else if (uiState.isQuizFinished) {
         1f // Completo al finalizar
     } else {
@@ -41,8 +41,7 @@ fun QuizScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title
-        = { Text("Test de Conocimientos") }) }
+        topBar = { TopAppBar(title = { Text("Test de Conocimientos") }) }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -66,7 +65,6 @@ fun QuizScreen(
             } else {
                 val currentQuestion =
                     uiState.questions[uiState.currentQuestionIndex]
-                // Se considera "respondida" si está en el set (contestada o saltada)
                 val isAnsweredOrSkipped = uiState.answeredQuestions.contains(uiState.currentQuestionIndex)
 
                 Column(
@@ -96,7 +94,6 @@ fun QuizScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        // <-- Este texto ahora se puede scrollear si es largo
                         Text(text = currentQuestion.questionText,
                             style = MaterialTheme.typography.headlineSmall)
 
@@ -112,21 +109,21 @@ fun QuizScreen(
                         options.forEach{ (key, text) ->
                             AnswerOption(
                                 text = text,
-                                optionKey = key, // <--- Pasamos la clave
+                                optionKey = key,
                                 isSelected = uiState.selectedAnswer == key,
-                                isAnswerSubmitted = uiState.isAnswerSubmitted, // <--- Pasamos el estado
-                                correctAnswerKey = uiState.correctOptionKey, // <--- Pasamos la respuesta correcta
+                                isAnswerSubmitted = uiState.isAnswerSubmitted,
+                                correctAnswerKey = uiState.correctOptionKey,
                                 onSelected = { viewModel.onAnswerSelected(key) }
                             )
                         }
 
-                        // --- Feedback/Leyenda (NUEVA SECCIÓN) ---
+                        // --- Feedback/Leyenda (AHORA USA COLORES M3) ---
                         if (uiState.isAnswerSubmitted && uiState.feedbackMessage != null) {
                             val isCorrect = uiState.selectedAnswer == uiState.correctOptionKey
-                            // Colores más fuertes para el texto
-                            val color = if (isCorrect) Color(0xFF2E7D32) else Color(0xFFC62828)
-                            // Colores pastel para el fondo
-                            val containerColor = if (isCorrect) Color(0xFFC8E6C9) else Color(0xFFFFCDD2)
+
+                            // Usamos colores temáticos
+                            val color = if (isCorrect) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onErrorContainer
+                            val containerColor = if (isCorrect) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer
 
                             Card(
                                 colors = CardDefaults.cardColors(containerColor = containerColor),
@@ -152,11 +149,9 @@ fun QuizScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Botón Saltar/Avanzar (Solo si no se ha respondido)
-                        // Mostramos "Saltar" si la pregunta aún no está en el set de respondidas/saltadas
                         if (!uiState.isAnswerSubmitted && !isAnsweredOrSkipped) {
                             OutlinedButton(
                                 onClick = { viewModel.onSkipClicked() },
-                                // Lo deshabilitamos solo si ya se respondió/saltó
                                 enabled = true
                             ) {
                                 Text("Saltar Pregunta")
@@ -178,7 +173,7 @@ fun QuizScreen(
                                 }
                             },
                             enabled = uiState.isAnswerSubmitted || uiState.selectedAnswer != null,
-                            modifier = Modifier.weight(1f, fill = false) // Para que tome el espacio necesario
+                            modifier = Modifier.weight(1f, fill = false)
                         ) {
                             Text(
                                 if (uiState.isAnswerSubmitted) {
@@ -199,25 +194,26 @@ fun QuizScreen(
 @Composable
 fun AnswerOption(
     text: String,
-    optionKey: String, // <--- Clave de la opción (A, B, C, D)
+    optionKey: String,
     isSelected: Boolean,
-    isAnswerSubmitted: Boolean, // <--- Estado de envío
-    correctAnswerKey: String?, // <--- Clave de respuesta correcta
+    isAnswerSubmitted: Boolean,
+    correctAnswerKey: String?,
     onSelected: () -> Unit
 ) {
     val isCorrect = isAnswerSubmitted && optionKey == correctAnswerKey
     val isIncorrect = isAnswerSubmitted && isSelected && optionKey != correctAnswerKey
 
+    // --- LÓGICA DE COLOR DINÁMICA (Material 3) ---
     val containerColor = when {
-        isCorrect -> Color(0xFFC8E6C9) // Verde pastel para correcto
-        isIncorrect -> Color(0xFFFFCDD2) // Rojo pastel para incorrecto
+        isCorrect -> MaterialTheme.colorScheme.tertiaryContainer
+        isIncorrect -> MaterialTheme.colorScheme.errorContainer
         isSelected -> MaterialTheme.colorScheme.primaryContainer
         else -> MaterialTheme.colorScheme.surface
     }
 
     val contentColor = when {
-        isCorrect -> Color(0xFF2E7D32) // Verde oscuro
-        isIncorrect -> Color(0xFFC62828) // Rojo oscuro
+        isCorrect -> MaterialTheme.colorScheme.onTertiaryContainer
+        isIncorrect -> MaterialTheme.colorScheme.onErrorContainer
         isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
         else -> MaterialTheme.colorScheme.onSurface
     }
@@ -225,13 +221,12 @@ fun AnswerOption(
     val cardColors = CardDefaults.cardColors(containerColor = containerColor, contentColor = contentColor)
     val border = if (isCorrect || isIncorrect) null else CardDefaults.outlinedCardBorder()
 
-    // El Card se puede seleccionar solo si la respuesta NO ha sido enviada
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .selectable(
                 selected = isSelected,
-                enabled = !isAnswerSubmitted, // <--- Bloquea la selección
+                enabled = !isAnswerSubmitted, // Bloquea la selección
                 onClick = onSelected
             ),
         colors = cardColors,
@@ -244,13 +239,12 @@ fun AnswerOption(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Cambiamos el color del RadioButton
             RadioButton(
                 selected = isSelected,
                 onClick = null,
-                enabled = !isAnswerSubmitted, // <--- Bloquea el RadioButton
+                enabled = !isAnswerSubmitted, // Bloquea el RadioButton
                 colors = RadioButtonDefaults.colors(
-                    selectedColor = if (isCorrect || isIncorrect) contentColor else MaterialTheme.colorScheme.primary,
+                    selectedColor = contentColor, // Usa el color del contenido
                     unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
@@ -258,7 +252,7 @@ fun AnswerOption(
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (isCorrect) FontWeight.Bold else FontWeight.Normal // Resalta el texto correcto
+                fontWeight = if (isCorrect) FontWeight.Bold else FontWeight.Normal
             )
         }
     }
@@ -272,10 +266,8 @@ fun QuizResult(score: Int, totalQuestions: Int, onFinish: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text("¡Test Finalizado!", style = MaterialTheme.typography.displaySmall)
-        Text("Tu puntuación:", style
-        = MaterialTheme.typography.headlineMedium)
-        Text("$score / $totalQuestions",
-            style = MaterialTheme.typography.headlineLarge)
+        Text("Tu puntuación:", style = MaterialTheme.typography.headlineMedium)
+        Text("$score / $totalQuestions", style = MaterialTheme.typography.headlineLarge)
         Button(onClick = onFinish) {
             Text("Volver al Módulo")
         }

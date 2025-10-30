@@ -71,7 +71,7 @@ fun TestReviewScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // 1. Cabecera con el resultado
@@ -88,6 +88,11 @@ fun TestReviewScreen(
                 items(uiState.reviewedQuestions) { reviewedQuestion ->
                     ReviewQuestionCard(reviewedQuestion = reviewedQuestion)
                 }
+
+                // Espacio al final de la lista
+                item {
+                    Spacer(Modifier.height(16.dp))
+                }
             }
         }
     }
@@ -99,7 +104,6 @@ fun TestResultHeader(title: String, score: Double, correct: Int, total: Int) {
     val isApproved = score >= approvalScore
     val scoreColor = if (isApproved) Color(0xFF006400) else MaterialTheme.colorScheme.error
 
-    // --- CAMBIO: Usamos Card normal con CardDefaults.filledTonalCardColors() ---
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -137,7 +141,6 @@ fun ReviewQuestionCard(reviewedQuestion: ReviewedQuestion) {
     val question = reviewedQuestion.question
     val userAnswer = reviewedQuestion.userAnswer
 
-    // --- Tarjeta más sutil ---
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium
@@ -150,7 +153,6 @@ fun ReviewQuestionCard(reviewedQuestion: ReviewedQuestion) {
             )
             Spacer(Modifier.height(16.dp))
 
-            // Creamos una lista de las 4 opciones
             val options = listOf(
                 "A" to question.optionA,
                 "B" to question.optionB,
@@ -167,11 +169,36 @@ fun ReviewQuestionCard(reviewedQuestion: ReviewedQuestion) {
                 )
                 Spacer(Modifier.height(8.dp))
             }
+
+            // --- SECCIÓN: EXPLICACIÓN DETALLADA (LEYENDA) ---
+            if (!userAnswer.explanationText.isNullOrBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f),
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = "Explicación Detallada:",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = userAnswer.explanationText!!, // Usamos la explicación guardada
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+            // --- FIN SECCIÓN ---
         }
     }
 }
 
-// --- Data class para solucionar el error de Triple ---
 private data class AnswerStyle(
     val backgroundColor: Color,
     val icon: ImageVector?,
@@ -189,7 +216,6 @@ fun AnswerReviewOption(
     val isCorrect = optionKey == correctAnswer
     val isSelected = optionKey == userSelection
 
-    // --- Lógica de color ahora usa el data class ---
     val (backgroundColor, icon, iconColor, contentColor) = when {
         // Opción correcta (siempre se marca)
         isCorrect -> AnswerStyle(

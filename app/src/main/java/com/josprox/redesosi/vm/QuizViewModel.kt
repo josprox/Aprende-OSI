@@ -1,5 +1,6 @@
 package com.josprox.redesosi.vm
 
+
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+
 data class QuizUiState(
     val questions: List<QuestionEntity> = emptyList(),
     val currentQuestionIndex: Int = 0,
@@ -24,7 +26,7 @@ data class QuizUiState(
     val isLoading: Boolean = true,
     // --- NUEVOS CAMPOS DE FEEDBACK Y PROGRESO ---
     val isAnswerSubmitted: Boolean = false, // Indica si el usuario ya presionó 'Guardar y Continuar'
-    val feedbackMessage: String? = null, // Mensaje de retroalimentación (Correcto/Incorrecto)
+    val feedbackMessage: String? = null, // Mensaje de retroalimentación (Correcto/Incorrecto + Explicación IA)
     val correctOptionKey: String? = null, // Guarda la respuesta correcta para resaltar
     val answeredQuestions: Set<Int> = emptySet() // Para saber qué preguntas ya se contestaron/saltaron
 )
@@ -37,19 +39,15 @@ class QuizViewModel @Inject constructor(
 
 ) : ViewModel() {
 
-    // Leemos ambos IDs desde el SavedStateHandle (gracias a la navegación)
     private val moduleId: Int = checkNotNull(savedStateHandle["moduleId"])
     private val attemptId: Long = checkNotNull(savedStateHandle["attemptId"])
-    // Será 0L si es un test nuevo
 
     private val _uiState = MutableStateFlow(QuizUiState())
     val uiState: StateFlow<QuizUiState> = _uiState.asStateFlow()
 
-    // Guardamos una referencia al intento actual
     private var currentAttempt: TestAttemptEntity? = null
 
     init {
-        // Decidimos si cargar un test nuevo o resumir uno existente
         if (attemptId == 0L) {
             loadNewTest()
         } else {
@@ -63,6 +61,7 @@ class QuizViewModel @Inject constructor(
     private fun loadNewTest() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
+            // Asegúrate de que Questions tiene el campo 'explanationText'
             val questions = repository.getOrCreateQuestionsForModule(moduleId)
 
             if (questions.isNotEmpty()) {
@@ -81,7 +80,6 @@ class QuizViewModel @Inject constructor(
 
             _uiState.update {
                 it.copy(
-                    // NO usamos .shuffled() - el orden debe ser fijo
                     questions = questions,
                     isLoading = false
                 )
@@ -96,25 +94,19 @@ class QuizViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
 
-            // 1. Cargar el intento y las preguntas
             currentAttempt = repository.getTestAttemptById(attemptId)
             val questions = repository.getOrCreateQuestionsForModule(moduleId)
-
-            // 2. Cargar las respuestas ya guardadas
             val savedAnswers = repository.getUserAnswersForAttempt(attemptId)
 
             if (currentAttempt == null) {
-                // Error, no se encontró el test, empezamos uno nuevo
                 loadNewTest()
                 return@launch
             }
 
-            // 3. Recalcular el puntaje, índice y preguntas ya respondidas
             val score = savedAnswers.count{ it.isCorrect }
             val currentIndex = currentAttempt!!.currentQuestionIndex
             val answeredQIds = savedAnswers.map { it.questionId }.toSet()
 
-            // Mapeamos los ID de preguntas a su índice dentro de la lista de questions
             val answeredIndices = questions.mapIndexedNotNull { index, questionEntity ->
                 if (answeredQIds.contains(questionEntity.id)) index else null
             }.toSet()
@@ -122,7 +114,7 @@ class QuizViewModel @Inject constructor(
 
             _uiState.update {
                 it.copy(
-                    questions = questions, // Mismo orden fijo
+                    questions = questions,
                     currentQuestionIndex = currentIndex,
                     score = score,
                     isLoading = false,
@@ -130,21 +122,20 @@ class QuizViewModel @Inject constructor(
                     isAnswerSubmitted = false,
                     feedbackMessage = null,
                     correctOptionKey = null,
-                    answeredQuestions = answeredIndices // Restauramos el conjunto de índices
+                    answeredQuestions = answeredIndices
                 )
             }
         }
     }
 
     fun onAnswerSelected(answer: String) {
-        // Solo permite seleccionar si la respuesta no ha sido enviada aún
         if (!_uiState.value.isAnswerSubmitted) {
             _uiState.update { it.copy(selectedAnswer = answer) }
         }
     }
 
     /**
-     * Guarda la respuesta, muestra el feedback y la respuesta correcta.
+     * Guarda la respuesta, muestra el feedback y la respuesta correcta (Guardar y Continuar).
      */
     fun onSaveAndContinueClicked() {
         val currentState = _uiState.value
@@ -156,55 +147,48 @@ class QuizViewModel @Inject constructor(
         val isCorrect = selectedAnswerKey == currentQuestion.correctAnswer
         val statusText = if (isCorrect) "Correcto" else "Incorrecto"
 
-        // ** <--- CAMBIO CLAVE: USAR LA EXPLICACIÓN GENERADA POR LA IA ---> **
-        // Usamos la explicación de la QuestionEntity. Si la respuesta es incorrecta,
-        // aun así mostramos la explicación de la respuesta correcta.
+        // Usamos la explicación generada por la IA que debe estar en QuestionEntity
         val explanationFromIA = currentQuestion.explanationText
 
-        // Creamos la leyenda que se muestra y se guarda
+        // Creamos la leyenda completa que se muestra y se guarda
         val feedback = "$statusText: $explanationFromIA"
 
         val newScore = if (isCorrect) currentState.score + 1 else currentState.score
 
         // 1. Guardar la respuesta en la BD (con la explicación/leyenda)
-        // Usamos el 'feedback' completo (status + explicación de IA)
         saveAnswer(currentQuestion, selectedAnswerKey, isCorrect, feedback)
-
 
         // 2. Actualizar el estado para mostrar el feedback
         _uiState.update {
             it.copy(
-                score = newScore, // Sumamos punto
+                score = newScore,
                 isAnswerSubmitted = true,
-                feedbackMessage = feedback, // Muestra el mensaje detallado
+                feedbackMessage = feedback,
                 correctOptionKey = currentQuestion.correctAnswer,
-                // Marcamos la pregunta como respondida
                 answeredQuestions = it.answeredQuestions + it.currentQuestionIndex
             )
         }
     }
 
     /**
-     * Pasa a la siguiente pregunta sin guardar respuesta.
+     * Pasa a la siguiente pregunta sin guardar respuesta (Saltar).
      */
     fun onSkipClicked() {
         val currentState = _uiState.value
-        // No se puede saltar si ya se envió la respuesta
         if (currentState.isAnswerSubmitted) return
 
-        // Marcamos como "saltada" (respondida con null, lógicamente)
-        // para que no vuelva y para que el botón avance a la siguiente
+        // Marcamos la pregunta como saltada para no volver
         _uiState.update {
             it.copy(
                 isAnswerSubmitted = false,
                 selectedAnswer = null,
                 feedbackMessage = null,
                 correctOptionKey = null,
-                answeredQuestions = it.answeredQuestions + it.currentQuestionIndex // ¡Importante para no volver!
+                answeredQuestions = it.answeredQuestions + it.currentQuestionIndex
             )
         }
 
-        // Usamos la lógica de onNextPage para avanzar
+        // Avanza a la siguiente página/pregunta
         onNextPage()
     }
 
@@ -231,7 +215,7 @@ class QuizViewModel @Inject constructor(
                 it.copy(
                     currentQuestionIndex = nextIndex,
                     selectedAnswer = null,
-                    isAnswerSubmitted = false, // Limpiamos el estado de envío
+                    isAnswerSubmitted = false,
                     feedbackMessage = null,
                     correctOptionKey = null
                 )
@@ -242,11 +226,9 @@ class QuizViewModel @Inject constructor(
     }
 
     /**
-     * Función que reemplaza la lógica del viejo onNextClicked.
-     * Ahora solo sirve para avanzar DESPUÉS de ver la retroalimentación.
+     * Función llamada por el botón "Siguiente Pregunta" después del feedback.
      */
     fun onNextClicked() {
-        // Solo avanza si la respuesta fue enviada (isAnswerSubmitted = true)
         if (_uiState.value.isAnswerSubmitted) {
             onNextPage()
         }
@@ -260,7 +242,7 @@ class QuizViewModel @Inject constructor(
         question: QuestionEntity,
         selectedOption: String,
         isCorrect: Boolean,
-        feedback: String? // Ahora guardamos la explicación/leyenda aquí
+        feedback: String? // Explicación guardada
     ) {
         val attemptId = currentAttempt?.id ?: return
         val answerEntity = UserAnswerEntity(
@@ -268,7 +250,7 @@ class QuizViewModel @Inject constructor(
             questionId = question.id,
             selectedOption = selectedOption,
             isCorrect = isCorrect,
-            explanationText = feedback // Guardamos la leyenda
+            explanationText = feedback // Guardamos la leyenda completa (incluyendo Correcto/Incorrecto)
         )
         viewModelScope.launch {
             repository.saveUserAnswer(answerEntity)
@@ -299,7 +281,6 @@ class QuizViewModel @Inject constructor(
         viewModelScope.launch{
             currentAttempt?.let{ attempt ->
                 val currentState = _uiState.value
-                // Verificamos si hay preguntas (evitar división por cero)
                 val totalQ = currentState.questions.size.toDouble().takeIf { it > 0 } ?: 1.0
                 val finalScore = (currentState.score.toDouble() / totalQ) * 10.0
                 val finalAttempt = attempt.copy(
