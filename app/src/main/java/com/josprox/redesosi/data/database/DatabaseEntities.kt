@@ -69,7 +69,7 @@ data class QuestionEntity(
     val optionC: String,
     val optionD: String,
     val correctAnswer: String, // "A", "B", o "C"
-    val explanationText: String
+    val explanationText: String = ""
 )
 
 @Entity(

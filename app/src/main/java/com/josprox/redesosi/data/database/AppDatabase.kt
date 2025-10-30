@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 @Database(
     entities = [SubjectEntity::class, ModuleEntity::class, SubmoduleEntity::class, QuestionEntity::class,TestAttemptEntity::class,
         UserAnswerEntity::class],
-    version = 3,
+    version = 4, // VERSIÓN CORRECTA
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -24,20 +24,31 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        // --- AÑADIMOS LA MIGRACIÓN ---
         /**
          * Migración de la versión 2 a 3.
          * Añade las columnas 'author' y 'version' a la tabla 'subjects'.
          */
         private val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // Añade las nuevas columnas a la tabla 'subjects'
-                // Les damos un valor por defecto para los registros existentes
                 db.execSQL("ALTER TABLE subjects ADD COLUMN author TEXT NOT NULL DEFAULT 'Desconocido'")
                 db.execSQL("ALTER TABLE subjects ADD COLUMN version TEXT NOT NULL DEFAULT '1.0'")
             }
         }
-        // --- FIN DE LA MIGRACIÓN ---
+
+        /**
+         * Migración de la versión 3 a 4.
+         * 1. Añade 'explanationText' a la tabla 'questions'.
+         * 2. Añade 'explanationText' a la tabla 'user_answers'.
+         */
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 1. Añadir explanationText a 'questions'
+                db.execSQL("ALTER TABLE questions ADD COLUMN explanationText TEXT NOT NULL DEFAULT ''")
+
+                // 2. Añadir explanationText a 'user_answers'
+                db.execSQL("ALTER TABLE user_answers ADD COLUMN explanationText TEXT")
+            }
+        }
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -47,7 +58,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "study_app_database"
                 )
                     .addCallback(DatabaseCallback(context))
-                    .addMigrations(MIGRATION_2_3) // <-- APLICAMOS LA MIGRACIÓN
+                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                 INSTANCE = instance
                 instance
