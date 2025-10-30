@@ -99,10 +99,9 @@ fun ChatScreen(
                 content = it.content,
                 node = it.node,
                 highlightsBuilder = highlightsBuilder,
-                // showHeader ha sido eliminado
+                showHeader = true
             )
         }
-        // No necesitamos sobrescribir codeBlock aquí ya que casi el código IA usa codeFence (```)
     )
     // --- Fin Configuración de Highlights ---
 

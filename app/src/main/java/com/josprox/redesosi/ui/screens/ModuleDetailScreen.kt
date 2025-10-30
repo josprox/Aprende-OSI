@@ -79,6 +79,7 @@ fun ModuleDetailScreen(
                 content = it.content,
                 node = it.node,
                 highlightsBuilder = highlightsBuilder,
+                showHeader = true
             )
         },
         codeFence = {
@@ -86,6 +87,7 @@ fun ModuleDetailScreen(
                 content = it.content,
                 node = it.node,
                 highlightsBuilder = highlightsBuilder,
+                showHeader = true
             )
         }
     )
