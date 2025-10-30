@@ -1,5 +1,6 @@
 package com.josprox.redesosi.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row // Importar Row
@@ -35,6 +36,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -55,7 +57,7 @@ fun ModuleDetailScreen(
 
     val title by viewModel.moduleTitle.collectAsState()
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState()) // Cambiado a exitUntilCollapsed para un mejor colapso
 
 
     Scaffold(
@@ -65,6 +67,7 @@ fun ModuleDetailScreen(
                 title = {
                     Text(
                         text = title,
+                        fontWeight = FontWeight.Bold // Título más audaz
                     )
                 },
                 navigationIcon = {
@@ -73,6 +76,7 @@ fun ModuleDetailScreen(
                     }
                 },
                 actions = {
+                    // Acción de regenerar más cerca del botón de navegación
                     IconButton(onClick = { viewModel.onRegenerateClicked() }) {
                         Icon(
                             Icons.Default.Refresh,
@@ -80,25 +84,34 @@ fun ModuleDetailScreen(
                         )
                     }
                 },
+                // Usamos colores de fondo temático para el Top Bar
+                colors = TopAppBarDefaults.mediumTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
                 scrollBehavior = scrollBehavior
             )
         },
         floatingActionButton = {
-            // --- AÑADIDO: Agrupamos los FABs en un Row ---
+            // --- AGRUPACIÓN DE FABs EXPRESIVA ---
             Row(
-                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // 1. Botón para el CHAT
+                // 1. Botón para el CHAT (Acción secundaria)
                 ExtendedFloatingActionButton(
-                    onClick = { navController.navigate(AppScreen.Chat.createRoute(moduleId)) }, // ✅ Usar createRoute
+                    onClick = { navController.navigate(AppScreen.Chat.createRoute(moduleId)) },
                     icon = { Icon(Icons.Default.QuestionAnswer, contentDescription = "") },
-                    text = { Text("Preguntar IA") }
+                    text = { Text("Preguntar IA") },
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer, // Color de acento secundario
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                 )
-                // 2. Botón para el QUIZ (existente)
+                // 2. Botón para el QUIZ (Acción principal)
                 ExtendedFloatingActionButton(
                     onClick = { navController.navigate(AppScreen.Quiz.createRoute(moduleId)) },
                     icon = { Icon(Icons.Default.PlayArrow, contentDescription = "") },
-                    text = { Text("Iniciar Test") }
+                    text = { Text("Iniciar Test") },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer, // Color primario
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
@@ -107,7 +120,7 @@ fun ModuleDetailScreen(
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { viewModel.onDialogDismiss() },
-                title = { Text("¿Regenerar Preguntas?") },
+                title = { Text("⚠️ Confirmar Regeneración") },
                 text = { Text("Esto borrará permanentemente todo tu historial (exámenes pendientes y calificaciones) y generará preguntas nuevas para este módulo. ¿Continuar?") },
                 confirmButton = {
                     Button(
@@ -131,6 +144,7 @@ fun ModuleDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
+            // Padding ajustado para dar aire, el horizontal va en los ítems.
             contentPadding = PaddingValues(bottom = 96.dp)
         ) {
             items(submodules) { submodule ->
@@ -138,10 +152,15 @@ fun ModuleDetailScreen(
                     Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
-                        .padding(top = 16.dp, bottom = 24.dp)
+                        .padding(top = 24.dp, bottom = 8.dp) // Más espacio superior para jerarquía
                 ) {
-                    Text(submodule.title, style = MaterialTheme.typography.headlineSmall)
-                    Spacer(Modifier.height(8.dp))
+                    // Título del submódulo más prominente
+                    Text(
+                        submodule.title,
+                        style = MaterialTheme.typography.headlineMedium, // Tamaño más grande
+                        color = MaterialTheme.colorScheme.primary // Color de acento para el título
+                    )
+                    Spacer(Modifier.height(12.dp))
 
                     SelectionContainer {
                         RichText(

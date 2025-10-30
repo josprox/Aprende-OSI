@@ -19,13 +19,17 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.josprox.redesosi.navigation.AppScreen
@@ -35,20 +39,34 @@ import com.josprox.redesosi.navigation.AppScreen
 fun SettingsScreen(navController: NavHostController) {
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Configuración") })
+            TopAppBar(
+                title = {
+                    Text(
+                        "Ajustes de la Aplicación",
+                        style = MaterialTheme.typography.headlineSmall, // Título más grande y enfocado
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
         }
     ) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp), // Aplicamos padding horizontal aquí para la columna
         ) {
 
-            // Sección 1: Gestión de Datos
-            SettingsSection(title = "Gestión de Datos") {
+            Spacer(modifier = Modifier.height(8.dp)) // Espacio inicial
+
+            // Sección 1: Gestión de Datos (Agrupada en una sola Card)
+            SettingsGroupCard(title = "Gestión de Datos") {
                 SettingsItem(
                     headline = "Copia de Seguridad y Restauración",
-                    supportingText = "Exporta o importa todos tus datos de la aplicación.",
+                    supportingText = "Exporta o importa todos tus datos de estudio y progreso.",
                     icon = Icons.Default.Save,
                     onClick = {
                         navController.navigate(AppScreen.BackupRestore.route)
@@ -56,46 +74,70 @@ fun SettingsScreen(navController: NavHostController) {
                 )
             }
 
-            // --- Espaciador y Separador ---
-            Spacer(modifier = Modifier.height(16.dp))
-            Divider()
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(24.dp)) // Más espacio entre secciones
 
-            // Sección 2: Acerca de la Aplicación
-            SettingsSection(title = "Acerca de la Aplicación") {
+            // Sección 2: Acerca de la Aplicación (Agrupada en una sola Card)
+            SettingsGroupCard(title = "Información y Legal") {
                 SettingsItem(
-                    headline = "Información Legal",
-                    supportingText = "Política de privacidad y términos de servicio.",
+                    headline = "Acerca de la Aplicación",
+                    supportingText = "Detalles de la versión y reconocimiento a desarrolladores.",
                     icon = Icons.Default.Info,
                     onClick = {
                         // Navegación a la nueva pantalla
                         navController.navigate(AppScreen.LegalInfo.route)
                     }
                 )
+                // Usamos un Divider dentro de la Card para separar los elementos
+                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                SettingsItem(
+                    headline = "Información Legal",
+                    supportingText = "Política de privacidad y términos de servicio.",
+                    icon = Icons.Default.Lock,
+                    onClick = {
+                        navController.navigate(AppScreen.LegalInfo.route) // Asumiendo que es la misma pantalla o una ruta relacionada
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp)) // Espacio al final
+        }
+    }
+}
+
+/**
+ * Componente que agrupa varios SettingsItem dentro de una Card grande.
+ * Esto reduce la 'ruidosidad' visual y agrupa lógicamente.
+ */
+@Composable
+fun SettingsGroupCard(title: String, content: @Composable () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium, // Título de sección un poco más grande
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary, // Color de acento
+            modifier = Modifier.padding(bottom = 8.dp, start = 4.dp) // Alineación con la Card
+        )
+
+        // Card que contiene todos los ítems de la sección
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaterialTheme.shapes.large, // Forma distintiva para el grupo
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh // Fondo que destaca ligeramente
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column {
+                content()
             }
         }
     }
 }
 
 /**
- * Componente reutilizable para los títulos de sección en Ajustes.
- * El padding horizontal se ha movido aquí para que las tarjetas ocupen el ancho total de la sección.
- */
-@Composable
-fun SettingsSection(title: String, content: @Composable () -> Unit) {
-    Column(modifier = Modifier.padding(top = 8.dp, start = 16.dp, end = 16.dp, bottom = 4.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        content()
-    }
-}
-
-/**
- * Componente reutilizable para cada ítem de ajuste, ahora envuelto en una Card.
+ * Ítem individual, ahora más limpio y sin Card, ya que es hijo de SettingsGroupCard.
  */
 @Composable
 fun SettingsItem(
@@ -104,34 +146,25 @@ fun SettingsItem(
     icon: ImageVector,
     onClick: () -> Unit
 ) {
-    // 1. Usamos Card para el diseño de tarjeta con bordes redondeados
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp), // Pequeño padding vertical entre ítems
-        shape = MaterialTheme.shapes.medium, // Bordes redondeados por defecto (o custom si lo defines)
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp) // Sombra sutil
-    ) {
-        // 2. Usamos ListItem dentro del Card para el contenido
-        ListItem(
-            headlineContent = { Text(headline) },
-            supportingContent = { Text(supportingText) },
-            leadingContent = {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            },
-            trailingContent = {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowForwardIos,
-                    contentDescription = null,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            },
-            // El clickable se aplica al modifier del ListItem
-            modifier = Modifier.clickable(onClick = onClick)
-        )
-    }
+    ListItem(
+        headlineContent = { Text(headline, fontWeight = FontWeight.Medium) },
+        supportingContent = { Text(supportingText) },
+        leadingContent = {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary // Iconos con color de acento
+            )
+        },
+        trailingContent = {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForwardIos,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        modifier = Modifier.clickable(onClick = onClick),
+        // Usamos colores transparentes para que el fondo lo dé la Card padre
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+    )
 }

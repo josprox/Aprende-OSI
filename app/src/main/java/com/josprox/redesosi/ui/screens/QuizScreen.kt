@@ -13,9 +13,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.josprox.redesosi.navigation.AppScreen // Importar AppScreen
 import com.josprox.redesosi.vm.QuizViewModel
 
 
@@ -28,20 +30,26 @@ fun QuizScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // --- Cálculo del progreso ---
+    // --- Cálculo del progreso (Verificación de corrección) ---
     val progress = if (uiState.questions.isNotEmpty()
         && !uiState.isQuizFinished) {
         (uiState.currentQuestionIndex.toFloat() + 1f)
-            .coerceAtMost(uiState.questions.size.toFloat())
-        uiState.questions.size.toFloat()
+            .coerceAtMost(uiState.questions.size.toFloat()) / uiState.questions.size.toFloat()
     } else if (uiState.isQuizFinished) {
-        1f // Completo al finalizar
+        1f
     } else {
-        0f // Cargando
+        0f
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Test de Conocimientos") }) }
+        topBar = {
+            TopAppBar(
+                title = { Text("Test de Conocimientos", fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -57,9 +65,12 @@ fun QuizScreen(
                 Text("No se pudieron generar las preguntas. Inténtalo de nuevo.")
             } else if (uiState.isQuizFinished)
             {
+                // --- CAMBIO CLAVE 1: Pasamos el attemptId y navController ---
                 QuizResult(
                     score = uiState.score,
                     totalQuestions = uiState.questions.size,
+                    attemptId = viewModel.currentAttemptId, // Propiedad necesaria en QuizViewModel
+                    navController = navController, // Necesitamos pasar el NavController
                     onFinish = { navController.popBackStack()}
                 )
             } else {
@@ -76,26 +87,31 @@ fun QuizScreen(
                         progress = { progress},
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.tertiary
                     )
 
-                    // --- Esta Columna INTERNA es la que se puede scrollear ---
+                    // --- Contenido con scroll ---
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
                             .verticalScroll(rememberScrollState())
-                            .padding(16.dp),
+                            .padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         Text(
                             text = "Pregunta ${uiState.currentQuestionIndex + 1}/${uiState.questions.size}",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 8.dp)
                         )
 
-                        Text(text = currentQuestion.questionText,
-                            style = MaterialTheme.typography.headlineSmall)
+                        Text(
+                            text = currentQuestion.questionText,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
 
                         Spacer(Modifier.height(8.dp))
 
@@ -117,17 +133,17 @@ fun QuizScreen(
                             )
                         }
 
-                        // --- Feedback/Leyenda (AHORA USA COLORES M3) ---
+                        // --- Feedback/Leyenda ---
                         if (uiState.isAnswerSubmitted && uiState.feedbackMessage != null) {
                             val isCorrect = uiState.selectedAnswer == uiState.correctOptionKey
 
-                            // Usamos colores temáticos
                             val color = if (isCorrect) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onErrorContainer
                             val containerColor = if (isCorrect) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer
 
                             Card(
                                 colors = CardDefaults.cardColors(containerColor = containerColor),
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = MaterialTheme.shapes.large
                             ) {
                                 Text(
                                     text = uiState.feedbackMessage!!,
@@ -148,7 +164,7 @@ fun QuizScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Botón Saltar/Avanzar (Solo si no se ha respondido)
+                        // Botón Saltar/Avanzar
                         if (!uiState.isAnswerSubmitted && !isAnsweredOrSkipped) {
                             OutlinedButton(
                                 onClick = { viewModel.onSkipClicked() },
@@ -158,22 +174,24 @@ fun QuizScreen(
                             }
                         }
 
-                        // Usamos Spacer si el botón de saltar no está presente para alinear a la derecha
                         if (uiState.isAnswerSubmitted || isAnsweredOrSkipped) {
                             Spacer(Modifier.weight(1f))
                         }
 
-                        // Botón de Acción Principal (Dinámico)
+                        // Botón de Acción Principal (Destacado)
                         Button(
                             onClick = {
                                 if (uiState.isAnswerSubmitted) {
-                                    viewModel.onNextClicked() // Mover a la siguiente
+                                    viewModel.onNextClicked()
                                 } else {
-                                    viewModel.onSaveAndContinueClicked() // Guardar y retroalimentar
+                                    viewModel.onSaveAndContinueClicked()
                                 }
                             },
                             enabled = uiState.isAnswerSubmitted || uiState.selectedAnswer != null,
-                            modifier = Modifier.weight(1f, fill = false)
+                            modifier = Modifier.weight(1f, fill = false),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (uiState.isAnswerSubmitted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+                            )
                         ) {
                             Text(
                                 if (uiState.isAnswerSubmitted) {
@@ -191,6 +209,7 @@ fun QuizScreen(
 }
 
 
+// --- Componente de Opción de Respuesta (Se mantiene igual) ---
 @Composable
 fun AnswerOption(
     text: String,
@@ -203,7 +222,6 @@ fun AnswerOption(
     val isCorrect = isAnswerSubmitted && optionKey == correctAnswerKey
     val isIncorrect = isAnswerSubmitted && isSelected && optionKey != correctAnswerKey
 
-    // --- LÓGICA DE COLOR DINÁMICA (Material 3) ---
     val containerColor = when {
         isCorrect -> MaterialTheme.colorScheme.tertiaryContainer
         isIncorrect -> MaterialTheme.colorScheme.errorContainer
@@ -219,19 +237,22 @@ fun AnswerOption(
     }
 
     val cardColors = CardDefaults.cardColors(containerColor = containerColor, contentColor = contentColor)
-    val border = if (isCorrect || isIncorrect) null else CardDefaults.outlinedCardBorder()
+
+    val border = if (isCorrect || isIncorrect || isSelected) null else CardDefaults.outlinedCardBorder()
+    val elevation = if (isCorrect || isIncorrect) CardDefaults.cardElevation(4.dp) else CardDefaults.cardElevation(1.dp)
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .selectable(
                 selected = isSelected,
-                enabled = !isAnswerSubmitted, // Bloquea la selección
+                enabled = !isAnswerSubmitted,
                 onClick = onSelected
             ),
         colors = cardColors,
         border = border,
-        shape = MaterialTheme.shapes.medium
+        shape = MaterialTheme.shapes.large,
+        elevation = elevation
     ) {
         Row(
             modifier = Modifier
@@ -242,9 +263,9 @@ fun AnswerOption(
             RadioButton(
                 selected = isSelected,
                 onClick = null,
-                enabled = !isAnswerSubmitted, // Bloquea el RadioButton
+                enabled = !isAnswerSubmitted,
                 colors = RadioButtonDefaults.colors(
-                    selectedColor = contentColor, // Usa el color del contenido
+                    selectedColor = contentColor,
                     unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
@@ -252,24 +273,81 @@ fun AnswerOption(
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (isCorrect) FontWeight.Bold else FontWeight.Normal
+                fontWeight = if (isCorrect || isSelected) FontWeight.SemiBold else FontWeight.Normal
             )
         }
     }
 }
 
 
+// --- Componente de Resultado Final (MODIFICADO) ---
 @Composable
-fun QuizResult(score: Int, totalQuestions: Int, onFinish: () -> Unit) {
+fun QuizResult(
+    score: Int,
+    totalQuestions: Int,
+    attemptId: Long?, // <-- AÑADIDO: ID del intento
+    navController: NavController, // <-- AÑADIDO: NavController
+    onFinish: () -> Unit
+) {
+    val scoreRatio = score.toDouble() / totalQuestions
+    val isApproved = scoreRatio >= 0.8
+
+    val color = if (isApproved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+        modifier = Modifier.padding(32.dp)
     ) {
-        Text("¡Test Finalizado!", style = MaterialTheme.typography.displaySmall)
-        Text("Tu puntuación:", style = MaterialTheme.typography.headlineMedium)
-        Text("$score / $totalQuestions", style = MaterialTheme.typography.headlineLarge)
-        Button(onClick = onFinish) {
-            Text("Volver al Módulo")
+        Text(
+            "¡Test Finalizado!",
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.ExtraBold,
+            color = color
+        )
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                "Puntuación:",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            Text(
+                "$score / $totalQuestions",
+                style = MaterialTheme.typography.displayLarge,
+                color = color,
+                fontWeight = FontWeight.Black
+            )
+        }
+
+        Text(
+            if (isApproved) "¡Excelente trabajo! Has demostrado dominio del tema." else "Sigue estudiando. Revisa tus errores para mejorar.",
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center // Corregido: Usamos TextAlign.Center
+        )
+
+        // --- FILA DE BOTONES: Ver Examen y Volver al Módulo ---
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            // 1. Botón para VER EL EXAMEN (OutlinedButton)
+            if (attemptId != null && attemptId != 0L) {
+                OutlinedButton(
+                    onClick = {
+                        navController.navigate(AppScreen.TestReview.createRoute(attemptId))
+                    },
+                ) {
+                    Text("Ver el examen")
+                }
+                Spacer(Modifier.width(16.dp))
+            }
+
+            // 2. Botón para VOLVER AL MÓDULO (Filled Button)
+            Button(
+                onClick = onFinish,
+            ) {
+                Text("Volver al Módulo")
+            }
         }
     }
 }

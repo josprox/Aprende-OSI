@@ -2,6 +2,7 @@ package com.josprox.redesosi.ui.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,10 +25,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -49,23 +52,24 @@ fun ModuleListScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    // --- TÍTULO MODIFICADO CON MARQUEE ---
                     Text(
-                        text = "$subjectName - Módulos",
-                        // softWrap = false es crucial para que marquee funcione
+                        // Mantenemos el marquee, pero usamos un título más descriptivo
+                        text = "$subjectName: Módulos de Contenido",
                         softWrap = false,
                         modifier = Modifier.basicMarquee(
-                            // iterations = Int.MAX_VALUE hace que se repita para siempre
                             iterations = Int.MAX_VALUE
                         )
                     )
-                    // --- FIN DE LA MODIFICACIÓN ---
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver a Materias")
                     }
-                }
+                },
+                // Hacemos el TopAppBar más limpio para que la Card destaque
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { paddingValues ->
@@ -81,21 +85,25 @@ fun ModuleListScreen(
                 Card(
                     onClick = { navController.navigate(AppScreen.ModuleDetail.createRoute(module.id)) },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
+                    shape = MaterialTheme.shapes.large, // Forma más distintiva
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // Sombra sutil
                 ) {
                     ListItem(
                         headlineContent = {
                             Text(
+                                // Título más grande y con acento
                                 text = module.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer // Usa el color sobre el contenedor
                             )
                         },
                         supportingContent = {
                             Text(
+                                // Descripción más discreta
                                 text = module.shortDescription,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -105,11 +113,13 @@ fun ModuleListScreen(
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowForwardIos,
                                 contentDescription = "Ver detalle",
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                // Icono más grande para ser mejor objetivo táctil
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.primary // Icono con color de acento
                             )
                         },
-                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                        // Importante: Usamos Color.Transparent para que el color del Card fluya hacia el ListItem
+                        colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
                     )
                 }
             }

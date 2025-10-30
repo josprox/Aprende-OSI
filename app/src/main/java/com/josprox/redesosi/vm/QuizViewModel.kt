@@ -294,4 +294,8 @@ class QuizViewModel @Inject constructor(
             }
         }
     }
+
+    // Agrega esta propiedad pública para acceder al ID en QuizScreen.kt
+    val currentAttemptId: Long?
+        get() = currentAttempt?.id
 }

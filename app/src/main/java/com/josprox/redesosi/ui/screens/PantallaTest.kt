@@ -2,18 +2,24 @@ package com.josprox.redesosi.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Replay
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -35,7 +40,7 @@ import com.josprox.redesosi.vm.TestViewModel
 fun PantallaTest(
     navController: NavController,
     modifier: Modifier = Modifier,
-    viewModel: TestViewModel = hiltViewModel() // Inyecta el ViewModel
+    viewModel: TestViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pendingTests = uiState.pendingTests
@@ -44,108 +49,155 @@ fun PantallaTest(
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp), // Aplicamos padding horizontal aquí
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // --- Título Expresivo ---
         item {
             Text(
-                text = "Mis Exámenes",
-                style = MaterialTheme.typography.headlineMedium,
-                textAlign = TextAlign.Center
+                text = "Tu Historial de Exámenes",
+                style = MaterialTheme.typography.displaySmall, // Título grande
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
             )
         }
 
-        // --- Sección de Tests Pendientes ---
+        // --- Separador: Pendientes ---
         item {
-            Text(
-                text = "Pendientes por Terminar",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Assignment, contentDescription = "Pendientes", tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "En Progreso",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
         if (pendingTests.isEmpty()) {
             item {
                 Text(
-                    text = "No tienes exámenes pendientes.",
+                    text = "🎉 ¡Perfecto! No tienes exámenes pendientes.",
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
         } else {
             items(pendingTests) { test ->
                 TestItemCard(test = test) {
-                    // Lógica al hacer clic: Resumir test
-                    // Debes crear esta ruta de navegación
                     navController.navigate("quiz/${test.attempt.moduleId}?attemptId=${test.attempt.id}")
                 }
             }
         }
 
-        // --- Sección de Tests Completados (para Revisión) ---
+        // --- Separador: Completados ---
         item {
-            Text(
-                text = "Exámenes Completados (Revisión)",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.DoneAll, contentDescription = "Completados", tint = MaterialTheme.colorScheme.tertiary)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Completados para Revisión",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
         if (completedTests.isEmpty()) {
             item {
                 Text(
-                    text = "Aún no has completado ningún examen.",
+                    text = "Empieza un test para ver tu primer resultado.",
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
         } else {
             items(completedTests) { test ->
                 TestItemCard(test = test, isPending = false) {
-                    // Lógica al hacer clic: Revisar test
-                    // Debes crear una nueva pantalla y ruta para esto
                     navController.navigate(AppScreen.TestReview.createRoute(test.attempt.id))
                 }
             }
         }
+
+        item { Spacer(Modifier.height(32.dp)) } // Padding extra al final
     }
 }
 
+// --- Tarjeta de Diseño Expressive ---
 @Composable
 fun TestItemCard(
     test: TestAttemptWithModule,
     isPending: Boolean = true,
     onClick: () -> Unit
 ) {
-    // --- CAMBIO: Usamos ElevatedCard + ListItem ---
-    ElevatedCard(
+    // Definimos los colores y el contenido basado en el estado (UI/UX)
+    val colorScheme = MaterialTheme.colorScheme
+    val (cardContainerColor, iconColor, statusText) = if (isPending) {
+        Triple(
+            colorScheme.primaryContainer,
+            colorScheme.primary,
+            "En Progreso (${test.attempt.currentQuestionIndex}/${test.attempt.totalQuestions})"
+        )
+    } else {
+        val score = test.attempt.score
+        val isApproved = score >= 8.0 // Ejemplo de UX: Aprobado/Reprobado
+
+        Triple(
+            if (isApproved) colorScheme.tertiaryContainer else colorScheme.errorContainer.copy(alpha = 0.6f),
+            if (isApproved) colorScheme.tertiary else colorScheme.error,
+            "Calificación: %.1f".format(score)
+        )
+    }
+
+    // Usamos Card y CardDefaults para más control sobre el color
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = MaterialTheme.shapes.medium
+        shape = MaterialTheme.shapes.large, // Usamos una forma grande para ser distintivo
+        colors = CardDefaults.cardColors(
+            containerColor = cardContainerColor,
+            contentColor = colorScheme.onSurface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp) // Sombra marcada
     ) {
-        ListItem(
-            headlineContent = {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                // Título del Módulo
                 Text(
                     text = test.moduleTitle,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = colorScheme.onSurface
                 )
-            },
-            supportingContent = {
+                Spacer(Modifier.height(4.dp))
+                // Estado/Calificación
                 Text(
-                    text = if (isPending) "En progreso..." else "Calificación: %.1f".format(test.attempt.score),
+                    text = statusText,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (isPending) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    fontWeight = FontWeight.SemiBold,
+                    color = iconColor // Usamos el color de acento
                 )
-            },
-            trailingContent = {
-                Icon(
-                    imageVector = if (isPending) Icons.Default.Replay else Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = if (isPending) "Resumir" else "Revisar"
-                )
-            },
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-        )
+            }
+
+            // Icono de acción
+            Icon(
+                imageVector = if (isPending) Icons.Default.Replay else Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = if (isPending) "Resumir Test" else "Revisar Calificación",
+                tint = iconColor // Color de acento para el icono
+            )
+        }
     }
 }
