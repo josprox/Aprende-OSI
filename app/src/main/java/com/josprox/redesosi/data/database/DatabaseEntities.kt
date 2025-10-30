@@ -68,7 +68,8 @@ data class QuestionEntity(
     val optionB: String,
     val optionC: String,
     val optionD: String,
-    val correctAnswer: String // "A", "B", o "C"
+    val correctAnswer: String, // "A", "B", o "C"
+    val explanationText: String
 )
 
 @Entity(
@@ -120,5 +121,6 @@ data class UserAnswerEntity(
     val testAttemptId: Long,
     val questionId: Int,
     val selectedOption: String, // "A", "B", "C", o "D"
-    val isCorrect: Boolean
+    val isCorrect: Boolean,
+    val explanationText: String? = null
 )

@@ -68,7 +68,8 @@ data class QuizQuestion(
     val optionB: String,
     val optionC: String,
     val optionD: String,
-    val correctAnswer: String
+    val correctAnswer: String,
+    val explanationText: String
 )
 
 // --- Modelos Específicos para Streaming ---
@@ -134,27 +135,23 @@ class GroqApiService {
             REGLAS CRÍTICAS PARA LAS PREGUNTAS:
             1.  **Formato:** Genera entre 15 y 30 preguntas de opción múltiple. (Prioriza calidad sobre cantidad).
             2.  **Opciones:** 4 opciones de respuesta (A, B, C, D).
-            3.  **Complejidad (Nivel Licenciatura/EGEL):**
-                * Las preguntas deben forzar el **ANÁLISIS**, la **APLICACIÓN** o la **COMPARACIÓN** de conceptos, no la simple memorización.
-                * **Distractores Plausibles (CRÍTICO):** Las 3 opciones incorrectas deben ser *altamente plausibles*, *sutiles* y *conceptualmente muy cercanas* a la respuesta correcta. Evita opciones obviamente incorrectas o absurdas. El objetivo es hacer dudar a un estudiante avanzado.
-            4.  **Tipos de Pregunta Preferidos:**
-                * **Escenario:** "Dada esta situación/problema, ¿qué capa/protocolo es responsable?"
-                * **Comparativas:** "¿Cuál es la diferencia *clave* entre el Protocolo X y el Protocolo Y en el contexto de...?"
-                * **Diagnóstico:** "Un usuario experimenta [PROBLEMA]. ¿En qué capa es más probable que resida la falla?"
-
+            3.  **Complejidad (Nivel Licenciatura/EGEL):** Las preguntas deben forzar el ANÁLISIS, la APLICACIÓN o la COMPARACIÓN de conceptos.
+            4.  **Explicación (CRÍTICO):** Para cada pregunta, debes incluir un campo 'explanationText' que justifique de forma concisa (máx. 2 frases) POR QUÉ la 'correctAnswer' es la correcta, basándose explícitamente en el contenido proporcionado.
+            
             FORMATO DE SALIDA OBLIGATORIO:
-            Responde *únicamente* con el objeto JSON. No incluyas texto introductorio, saludos, explicaciones ni markdown. La estructura exacta es:
+            Responde *únicamente* con el objeto JSON. No incluyas texto introductorio. La estructura exacta es:
             {
-              "questions": [
-                {
-                  "questionText": "Texto de la pregunta...",
-                  "optionA": "Opción A (distractor plausible)",
-                  "optionB": "Opción B (distractor plausible)",
-                  "optionC": "Opción C (respuesta correcta)",
-                  "optionD": "Opción D (distractor plausible)",
-                  "correctAnswer": "C"
-                }
-              ]
+                "questions": [
+                    {
+                       "questionText": "Texto de la pregunta...",
+                       "optionA": "Opción A (distractor plausible)",
+                       "optionB": "Opción B (distractor plausible)",
+                       "optionC": "Opción C (respuesta correcta)",
+                       "optionD": "Opción D (distractor plausible)",
+                       "correctAnswer": "C",
+                       "explanationText": "Correcto, el concepto X es fundamental en la capa Y porque..." // <--- ¡NUEVA ESTRUCTURA!
+                    }
+                ]
             }
         """.trimIndent()
 
@@ -210,7 +207,8 @@ class GroqApiService {
                     optionB = it.optionB,
                     optionC = it.optionC,
                     optionD = it.optionD,
-                    correctAnswer = it.correctAnswer
+                    correctAnswer = it.correctAnswer,
+                    explanationText = it.explanationText
                 )
             }
 
