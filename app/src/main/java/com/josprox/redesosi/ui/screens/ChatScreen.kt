@@ -12,13 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
@@ -29,7 +27,6 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -38,7 +35,6 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -55,8 +51,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.josprox.redesosi.vm.ChatMessage
 import com.josprox.redesosi.vm.ModuleDetailViewModel
+import com.mikepenz.markdown.compose.components.MarkdownComponents
+import com.mikepenz.markdown.compose.components.markdownComponents
+import com.mikepenz.markdown.compose.elements.MarkdownHighlightedCodeFence
 import com.mikepenz.markdown.m3.Markdown
+import dev.snipme.highlights.Highlights
+import dev.snipme.highlights.model.SyntaxThemes
 import kotlinx.coroutines.flow.collectLatest
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -85,10 +87,28 @@ fun ChatScreen(
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
+    // --- Configuración de Highlights (Debe estar aquí o en el ViewModel) ---
+    val isDarkTheme = androidx.compose.foundation.isSystemInDarkTheme()
+    val highlightsBuilder = remember(isDarkTheme) {
+        Highlights.Builder().theme(SyntaxThemes.atom(darkMode = isDarkTheme))
+    }
+    val customMarkdownComponents = markdownComponents(
+        // Sustituimos CodeFence para el resaltado
+        codeFence = {
+            MarkdownHighlightedCodeFence(
+                content = it.content,
+                node = it.node,
+                highlightsBuilder = highlightsBuilder,
+                // showHeader ha sido eliminado
+            )
+        }
+        // No necesitamos sobrescribir codeBlock aquí ya que casi el código IA usa codeFence (```)
+    )
+    // --- Fin Configuración de Highlights ---
+
+
     Scaffold(
         topBar = {
-            // Usamos un TopAppBar simple y fijo (Pinned) para un chat.
-            // LargeTopAppBar distrae y ocupa mucho espacio en una conversación.
             TopAppBar(
                 title = {
                     Text(
@@ -125,10 +145,11 @@ fun ChatScreen(
                 items(uiState.chatHistory) { message ->
                     MessageBubble(
                         message = message,
-                        isUser = message.role == "user"
+                        isUser = message.role == "user",
+                        customMarkdownComponents = customMarkdownComponents // Pasamos los componentes
                     )
                 }
-                // Indicador de carga solo si la IA está pensando y no hay burbuja pendiente (ya que MessageBubble lo maneja)
+                // Indicador de carga
                 if (uiState.isModelThinking && (uiState.chatHistory.isEmpty() || uiState.chatHistory.last().isPending.not())) {
                     item {
                         ThinkingIndicator()
@@ -147,13 +168,16 @@ fun ChatScreen(
     }
 }
 
-// --- Componente de Burbuja de Mensaje Mejorado (Más orgánico y M3) ---
+// --- Componente de Burbuja de Mensaje Mejorado (Modificado para recibir Componentes) ---
 @Composable
-fun MessageBubble(message: ChatMessage, isUser: Boolean) {
+fun MessageBubble(
+    message: ChatMessage,
+    isUser: Boolean,
+    customMarkdownComponents: MarkdownComponents // Recibe la interfaz correcta
+) {
     val cornerRadius = 16.dp
     val tailRadius = 4.dp
 
-    // Ajustamos la forma para darle un toque orgánico
     val bubbleShape = if (isUser) {
         RoundedCornerShape(
             topStart = cornerRadius,
@@ -170,11 +194,10 @@ fun MessageBubble(message: ChatMessage, isUser: Boolean) {
         )
     }
 
-    // Colores Expresivos: primaryContainer para el usuario, secondaryContainer para la IA
     val containerColor = if (isUser) {
         MaterialTheme.colorScheme.primaryContainer
     } else {
-        MaterialTheme.colorScheme.surfaceContainerHigh // Color más claro que surfaceContainer
+        MaterialTheme.colorScheme.surfaceContainerHigh
     }
 
     val contentColor = if (isUser) {
@@ -190,19 +213,16 @@ fun MessageBubble(message: ChatMessage, isUser: Boolean) {
         Card(
             shape = bubbleShape,
             colors = CardDefaults.cardColors(containerColor = containerColor, contentColor = contentColor),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), // Ligera elevación
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
             modifier = Modifier.widthIn(min = 80.dp, max = 320.dp)
         ) {
             Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
 
                 if (message.isPending) {
-                    // Si el mensaje está pendiente, mostramos el indicador de puntos
                     AnimatedLoadingDots(
-                        // Los puntos del asistente usan un color más tenue
                         dotColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
-                    // --- APLICAMOS MARKDOWN/RICH TEXT SOLO AL MENSAJE DEL ASISTENTE ---
                     if (isUser) {
                         Text(
                             text = message.content,
@@ -210,9 +230,11 @@ fun MessageBubble(message: ChatMessage, isUser: Boolean) {
                             color = contentColor
                         )
                     } else {
-                        SelectionContainer {
-                            Markdown(content = message.content)
-                        }
+                        // --- USAMOS EL MARKDOWN AVANZADO ---
+                        Markdown(
+                            content = message.content,
+                            components = customMarkdownComponents
+                        )
                     }
                 }
             }
@@ -220,7 +242,7 @@ fun MessageBubble(message: ChatMessage, isUser: Boolean) {
     }
 }
 
-// --- Componente de Entrada de Texto Mejorado (Estilo Filled M3) ---
+// --- Componentes auxiliares (ChatInput, AnimatedLoadingDots, ThinkingIndicator) se mantienen igual ---
 @Composable
 fun ChatInput(
     currentInput: String,
@@ -228,9 +250,8 @@ fun ChatInput(
     onSend: () -> Unit,
     isEnabled: Boolean
 ) {
-    // Usamos Surface para una elevación clara en el área de input
     Surface(
-        shadowElevation = 8.dp, // Mayor sombra para destacarlo como input area
+        shadowElevation = 8.dp,
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface
     ) {
@@ -252,7 +273,6 @@ fun ChatInput(
                 maxLines = 5,
                 enabled = isEnabled,
                 colors = TextFieldDefaults.colors(
-                    // Colores consistentes y limpios
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                     disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
@@ -267,7 +287,6 @@ fun ChatInput(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Botón de Enviar (siempre Primary)
             FilledIconButton(
                 onClick = onSend,
                 enabled = isEnabled && currentInput.isNotBlank(),
@@ -287,7 +306,6 @@ fun ChatInput(
     }
 }
 
-// --- Indicador de Tipeo (Puntos Animados, fuera de la burbuja) ---
 @Composable
 fun AnimatedLoadingDots(dotColor: Color = MaterialTheme.colorScheme.onSurface) {
     val dots = listOf("·", "··", "···")
@@ -299,7 +317,6 @@ fun AnimatedLoadingDots(dotColor: Color = MaterialTheme.colorScheme.onSurface) {
             dotIndex = (dotIndex + 1) % dots.size
         }
     }
-    // Mostramos el texto "Escribiendo" junto con los puntos animados
     Text(
         text = "Escribiendo${dots[dotIndex]}",
         style = MaterialTheme.typography.bodyLarge,
@@ -307,10 +324,8 @@ fun AnimatedLoadingDots(dotColor: Color = MaterialTheme.colorScheme.onSurface) {
     )
 }
 
-// --- Indicador de Carga/Pensando (como una burbuja) ---
 @Composable
 fun ThinkingIndicator() {
-    // Usamos el mismo diseño que la burbuja del asistente para consistencia
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Start

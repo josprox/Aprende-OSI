@@ -44,13 +44,11 @@ import androidx.navigation.NavController
 import com.josprox.redesosi.navigation.AppScreen
 import com.josprox.redesosi.vm.ModuleDetailViewModel
 import com.mikepenz.markdown.compose.components.markdownComponents
-// --- IMPORTACIONES CORREGIDAS ---
 import com.mikepenz.markdown.m3.Markdown
 import com.mikepenz.markdown.compose.elements.MarkdownHighlightedCodeBlock
 import com.mikepenz.markdown.compose.elements.MarkdownHighlightedCodeFence
 import dev.snipme.highlights.Highlights
 import dev.snipme.highlights.model.SyntaxThemes
-// --- FIN IMPORTACIONES CORREGIDAS ---
 
 
 @OptIn(ExperimentalMaterial3Api::class)
