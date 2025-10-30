@@ -53,10 +53,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.halilibo.richtext.markdown.Markdown
-import com.halilibo.richtext.ui.material3.RichText
 import com.josprox.redesosi.vm.ChatMessage
 import com.josprox.redesosi.vm.ModuleDetailViewModel
+import com.mikepenz.markdown.m3.Markdown
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -212,13 +211,7 @@ fun MessageBubble(message: ChatMessage, isUser: Boolean) {
                         )
                     } else {
                         SelectionContainer {
-                            RichText(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .wrapContentHeight(align = Alignment.Top)
-                            ) {
-                                Markdown(content = message.content)
-                            }
+                            Markdown(content = message.content)
                         }
                     }
                 }

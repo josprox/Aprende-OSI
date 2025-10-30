@@ -109,8 +109,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     // --- Renderizado de Markdown ---
-    implementation(libs.richtext.ui.material3)
-    implementation(libs.richtext.commonmark)
+    implementation(libs.markdown.renderer.core)
+    implementation(libs.markdown.renderer.m3) // Para el estilo M3
+    implementation(libs.markdown.renderer.code) // Para el Resaltado de Sintaxis
 
 
     // -- Dotenv Vault (Env) ---
