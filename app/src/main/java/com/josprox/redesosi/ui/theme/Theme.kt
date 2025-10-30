@@ -9,30 +9,54 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
-import onPrimaryContainerDark
-import onPrimaryContainerLight
-import onPrimaryDark
-import onPrimaryLight
-import onSecondaryContainerDark
-import onSecondaryContainerLight
-import onSecondaryDark
-import onSecondaryLight
-import onTertiaryContainerDark
-import onTertiaryContainerLight
-import onTertiaryDark
-import onTertiaryLight
-import primaryContainerDark
-import primaryContainerLight
-import primaryDark
+
+// Asegúrate de que todos los imports de Color.kt estén listos
 import primaryLight
-import secondaryContainerDark
-import secondaryContainerLight
-import secondaryDark
+import onPrimaryLight
+import primaryContainerLight
+import onPrimaryContainerLight
 import secondaryLight
-import tertiaryContainerDark
-import tertiaryContainerLight
-import tertiaryDark
+import onSecondaryLight
+import secondaryContainerLight
+import onSecondaryContainerLight
 import tertiaryLight
+import onTertiaryLight
+import tertiaryContainerLight
+import onTertiaryContainerLight
+import errorLight
+import onErrorLight
+import errorContainerLight
+import onErrorContainerLight
+import surfaceLight
+import onSurfaceLight
+import surfaceVariantLight
+import onSurfaceVariantLight
+import backgroundLight
+import onBackgroundLight
+
+import primaryDark
+import onPrimaryDark
+import primaryContainerDark
+import onPrimaryContainerDark
+import secondaryDark
+import onSecondaryDark
+import secondaryContainerDark
+import onSecondaryContainerDark
+import tertiaryDark
+import onTertiaryDark
+import tertiaryContainerDark
+import onTertiaryContainerDark
+import errorDark
+import onErrorDark
+import errorContainerDark
+import onErrorContainerDark
+import surfaceDark
+import onSurfaceDark
+import surfaceVariantDark
+import onSurfaceVariantDark
+import backgroundDark
+import onBackgroundDark
+
 
 private val DarkColorScheme = darkColorScheme(
     primary = primaryDark,
@@ -46,7 +70,17 @@ private val DarkColorScheme = darkColorScheme(
     tertiary = tertiaryDark,
     onTertiary = onTertiaryDark,
     tertiaryContainer = tertiaryContainerDark,
-    onTertiaryContainer = onTertiaryContainerDark
+    onTertiaryContainer = onTertiaryContainerDark,
+    error = errorDark,
+    onError = onErrorDark,
+    errorContainer = errorContainerDark,
+    onErrorContainer = onErrorContainerDark,
+    background = backgroundDark,
+    onBackground = onBackgroundDark,
+    surface = surfaceDark,
+    onSurface = onSurfaceDark,
+    surfaceVariant = surfaceVariantDark,
+    onSurfaceVariant = onSurfaceVariantDark
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -61,7 +95,17 @@ private val LightColorScheme = lightColorScheme(
     tertiary = tertiaryLight,
     onTertiary = onTertiaryLight,
     tertiaryContainer = tertiaryContainerLight,
-    onTertiaryContainer = onTertiaryContainerLight
+    onTertiaryContainer = onTertiaryContainerLight,
+    error = errorLight,
+    onError = onErrorLight,
+    errorContainer = errorContainerLight,
+    onErrorContainer = onErrorContainerLight,
+    background = backgroundLight,
+    onBackground = onBackgroundLight,
+    surface = surfaceLight,
+    onSurface = onSurfaceLight,
+    surfaceVariant = surfaceVariantLight,
+    onSurfaceVariant = onSurfaceVariantLight
 )
 
 @Composable
