@@ -18,18 +18,17 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.utils.io.cancel
 import io.ktor.utils.io.readUTF8Line
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.dotenv.vault.dotenvVault
-import kotlin.coroutines.coroutineContext
 
 // --- Modelos de datos Existentes ---
 @Serializable
 data class GroqRequest(
-// ... (Modelos de datos restantes)
     val messages: List<Message>,
     val model: String,
     val temperature: Double = 0.7,
@@ -262,7 +261,7 @@ class GroqApiService {
             // Leer el stream de datos
             val channel = httpResponse.body<io.ktor.utils.io.ByteReadChannel>()
             try {
-                while (!channel.isClosedForRead && coroutineContext.isActive) {
+                while (!channel.isClosedForRead && currentCoroutineContext().isActive) {
                     val line = channel.readUTF8Line() // Línea 266 (ahora debería funcionar)
                     if (line.isNullOrBlank()) continue
 
